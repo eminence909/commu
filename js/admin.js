@@ -343,7 +343,7 @@
   function settings() {
     var F = [{ sec: 'ชื่อและคำโปรย' }, { k: 'siteName', l: 'ชื่อเว็บ / ชื่อชุมชน' }, { k: 'siteTagline', l: 'คำโปรยท้ายเว็บ' }, { sec: 'หน้าแรก (ส่วนบนสุด)' }, { k: 'heroEyebrow', l: 'ข้อความเล็กเหนือหัวข้อ' }, { k: 'heroTitle', l: 'หัวข้อใหญ่', full: 1, s: 'ใช้เครื่องหมาย | เพื่อขึ้นบรรทัดใหม่ เช่น ชุมชนเข้มแข็ง|เริ่มต้นที่เราทุกคน' },
       { k: 'heroSubtitle', l: 'คำอธิบายใต้หัวข้อ', t: 'textarea', h: 80 }, { k: 'heroImage', l: 'รูปพื้นหลังหน้าแรก (ไม่บังคับ)', t: 'image' }, { sec: 'เกี่ยวกับชุมชน' }, { k: 'aboutTitle', l: 'หัวข้อ', full: 1 }, { k: 'aboutText', l: 'ข้อความแนะนำชุมชน', t: 'textarea', h: 130 },
-      { k: 'population', l: 'ประชากร (คน)', t: 'number' }, { k: 'households', l: 'ครัวเรือน', t: 'number' }, { k: 'groups', l: 'จำนวนกลุ่ม/ชมรม', t: 'number' }, { sec: 'ข้อมูลติดต่อ' }, { k: 'phone', l: 'เบอร์โทรศัพท์' }, { k: 'email', l: 'อีเมล' }, { k: 'address', l: 'ที่อยู่', full: 1 }, { k: 'officeHours', l: 'เวลาทำการ', full: 1 },
+      { k: 'aboutImage', l: 'รูปประกอบหน้าเกี่ยวกับชุมชน (ไม่บังคับ)', t: 'image' }, { k: 'vision', l: 'วิสัยทัศน์', t: 'textarea', h: 80 }, { k: 'mission', l: 'พันธกิจ (หนึ่งข้อต่อหนึ่งบรรทัด)', t: 'textarea', h: 120 }, { k: 'team', l: 'คณะผู้บริหาร/กรรมการ (หนึ่งคนต่อหนึ่งบรรทัด รูปแบบ: ชื่อ | ตำแหน่ง)', t: 'textarea', h: 140, ph: 'นายสมชาย ใจดี | ผู้ใหญ่บ้าน' }, { k: 'population', l: 'ประชากร (คน)', t: 'number' }, { k: 'households', l: 'ครัวเรือน', t: 'number' }, { k: 'groups', l: 'จำนวนกลุ่ม/ชมรม', t: 'number' }, { sec: 'ข้อมูลติดต่อ' }, { k: 'phone', l: 'เบอร์โทรศัพท์' }, { k: 'email', l: 'อีเมล' }, { k: 'address', l: 'ที่อยู่', full: 1 }, { k: 'officeHours', l: 'เวลาทำการ', full: 1 },
       { k: 'lineUrl', l: 'ลิงก์ LINE', t: 'url', ph: 'https://line.me/...' }, { k: 'facebookUrl', l: 'ลิงก์ Facebook', t: 'url', ph: 'https://facebook.com/...' }, { k: 'mapEmbed', l: 'ลิงก์ฝังแผนที่ Google Maps', t: 'url', full: 1, s: 'Google Maps > แชร์ > ฝังแผนที่ แล้วคัดลอกเฉพาะลิงก์ใน src="..."' }];
     return {
       html: head('ตั้งค่าเว็บ', 'แก้ไขข้อความและข้อมูลติดต่อที่แสดงบนหน้าเว็บ') + '<div class="box" style="margin-top:0" id="sf">' + formHTML(F, A.settings) + '<div class="m-actions"><button class="btn btn-dark" id="ss">บันทึกการตั้งค่า</button></div></div>',
@@ -351,7 +351,7 @@
         bindForm($('#sf'));
         $('#ss').onclick = function () {
           var b = this, v = readForm(F, $('#sf'));
-          ['heroImage', 'lineUrl', 'facebookUrl', 'mapEmbed'].forEach(function (k) { if (v[k] && !safeUrl(v[k])) v[k] = ''; });
+          ['heroImage', 'aboutImage', 'lineUrl', 'facebookUrl', 'mapEmbed'].forEach(function (k) { if (v[k] && !safeUrl(v[k])) v[k] = ''; });
           busy(b, true);
           API.saveSettings(v).then(function () { A.settings = Object.assign({}, A.settings, v); toast('บันทึกการตั้งค่าแล้ว'); busy(b, false, 'บันทึกการตั้งค่า'); })
             .catch(function (e) { toast(e.message, 'err'); busy(b, false, 'บันทึกการตั้งค่า'); });

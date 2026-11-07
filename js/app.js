@@ -124,7 +124,7 @@
       '<section class="section"><div class="container"><div class="cta reveal"><div><h2>แจ้งปัญหาแล้ว อยากรู้ว่าไปถึงไหน?</h2><p>กรอกเลขติดตามที่ได้ตอนแจ้งเรื่อง เพื่อดูสถานะล่าสุดได้ทันที</p></div>' +
       '<form class="trk" id="homeTrk"><input id="homeCode" placeholder="เช่น RP-261106-AB12" aria-label="เลขติดตามเรื่อง" autocomplete="off"><button class="btn btn-primary" type="submit">ตรวจสอบ ' + icon('arrow-right') + '</button></form></div></div></section>' +
 
-      '<section class="section"><div class="container about"><div class="about-text reveal"><span class="eyebrow" style="color:var(--teal)">เกี่ยวกับเรา</span><h2 style="font-size:clamp(1.7rem,3.6vw,2.5rem);line-height:1.3;margin-top:.3rem">' + esc(set('aboutTitle', 'เกี่ยวกับชุมชนของเรา')) + '</h2>' + paragraphs(set('aboutText')) + '</div>' +
+      '<section class="section"><div class="container about"><div class="about-text reveal"><span class="eyebrow" style="color:var(--teal)">เกี่ยวกับเรา</span><h2 style="font-size:clamp(1.7rem,3.6vw,2.5rem);line-height:1.3;margin-top:.3rem">' + esc(set('aboutTitle', 'เกี่ยวกับชุมชนของเรา')) + '</h2>' + paragraphs(set('aboutText')) + '<a class="btn btn-dark" href="#/about" style="margin-top:1rem">อ่านเพิ่มเติม</a></div>' +
       '<div class="stats">' + [['users', 'population', 'ประชากร (คน)'], ['home', 'households', 'ครัวเรือน'], ['sprout', 'groups', 'กลุ่ม/ชมรมในชุมชน'], ['layers', null, 'โครงการทั้งหมด']].map(function (x, i) {
         var v = x[1] ? Number(set(x[1], 0)) || 0 : S.projects.length;
         return '<div class="stat reveal" style="--rd:' + i * 0.08 + 's">' + icon(x[0]) + '<b data-count="' + v + '">0</b><span>' + x[2] + '</span></div>';
@@ -352,6 +352,24 @@
   }
 
   /* ---------- ติดต่อ ---------- */
+  function lines(t) { return String(t || '').split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean); }
+  function aboutView() {
+    var vision = set('vision'), mission = lines(set('mission')), team = lines(set('team')).map(function (l) { var a = l.split('|'); return [a[0].trim(), (a[1] || '').trim()]; }), img = safeUrl(set('aboutImage'));
+    var delay = function (i) { return ' style="--rd:' + i * 0.07 + 's"'; };
+    return {
+      title: 'เกี่ยวกับชุมชน',
+      html: pageHero('เกี่ยวกับเรา', set('aboutTitle', 'เกี่ยวกับชุมชนของเรา'), set('siteTagline')) +
+        '<section class="section"><div class="container"><div class="ab-story' + (img ? ' has-img' : '') + '"><div class="reveal">' + (paragraphs(set('aboutText')) || '<p class="muted">ยังไม่มีข้อมูล</p>') + '</div>' +
+        (img ? '<img class="ab-img reveal" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : '') + '</div>' +
+        (vision || mission.length ? '<div class="ab-vm">' +
+          (vision ? '<div class="ab-card reveal">' + icon('sprout') + '<h3>วิสัยทัศน์</h3><p>' + esc(vision) + '</p></div>' : '') +
+          (mission.length ? '<div class="ab-card reveal"' + delay(1) + '>' + icon('layers') + '<h3>พันธกิจ</h3><ul>' + mission.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') + '</div>' : '') +
+        (team.length ? '<h2 class="ab-h reveal">คณะผู้บริหารและกรรมการชุมชน</h2><div class="team">' + team.map(function (t, i) {
+          var ini = t[0].replace(/^(นางสาว|นาย|นาง|ดร\.|พระ|ว่าที่ร้อยตรี)\s*/, '').charAt(0) || t[0].charAt(0);
+          return '<div class="team-card reveal"' + delay(i % 4) + '><span class="avatar">' + esc(ini) + '</span><b>' + esc(t[0]) + '</b><small>' + esc(t[1]) + '</small></div>';
+        }).join('') + '</div>' : '') + '</div></section><div style="height:90px"></div>'
+    };
+  }
   function contactView() {
     var items = [['phone', 'โทรศัพท์', set('phone'), set('phone') ? 'tel:' + set('phone').replace(/[^0-9+]/g, '') : ''], ['mail', 'อีเมล', set('email'), set('email') ? 'mailto:' + set('email') : ''],
       ['pin', 'ที่อยู่', set('address'), ''], ['clock', 'เวลาทำการ', set('officeHours'), ''], ['chat', 'LINE', set('lineUrl') ? 'แอดไลน์ชุมชน' : '', safeUrl(set('lineUrl'))], ['facebook', 'Facebook', set('facebookUrl') ? 'เพจชุมชน' : '', safeUrl(set('facebookUrl'))]]
@@ -405,7 +423,7 @@
     var h = location.hash.replace(/^#\/?/, '').split('/');
     var page = h[0] || 'home', arg = h[1] ? decodeURIComponent(h.slice(1).join('/')) : '';
     var b = { home: homeView, news: function () { return arg ? newsDetail(arg) : newsView(); }, projects: function () { return arg ? projectDetail(arg) : projectsView(); },
-      gallery: galleryView, report: reportView, track: function () { return trackView(arg); }, contact: contactView }[page];
+      gallery: galleryView, about: aboutView, report: reportView, track: function () { return trackView(arg); }, contact: contactView }[page];
     document.body.classList.remove('menu-open');
     view.classList.add('leaving');
     sleep(first || prefersReduced ? 0 : 170).then(function () {
@@ -437,7 +455,7 @@
   }
   function initShell() {
     $('#brandMark').innerHTML = icon('sprout'); $('#ctaIc').innerHTML = icon('megaphone');
-    var links = [['home', '#/', 'home', 'หน้าแรก'], ['news', '#/news', 'newspaper', 'ข่าวและกิจกรรม'], ['projects', '#/projects', 'layers', 'โครงการพัฒนา'], ['gallery', '#/gallery', 'image', 'แกลเลอรี่'], ['report', '#/report', 'megaphone', 'แจ้งปัญหา'], ['track', '#/track', 'search', 'ติดตามสถานะ'], ['contact', '#/contact', 'phone', 'ติดต่อ']];
+    var links = [['home', '#/', 'home', 'หน้าแรก'], ['news', '#/news', 'newspaper', 'ข่าวและกิจกรรม'], ['projects', '#/projects', 'layers', 'โครงการพัฒนา'], ['gallery', '#/gallery', 'image', 'แกลเลอรี่'], ['about', '#/about', 'users', 'เกี่ยวกับชุมชน'], ['report', '#/report', 'megaphone', 'แจ้งปัญหา'], ['track', '#/track', 'search', 'ติดตามสถานะ'], ['contact', '#/contact', 'phone', 'ติดต่อ']];
     $('#mmenu').innerHTML = links.map(function (l, i) { return '<a href="' + l[1] + '" data-p="' + l[0] + '" style="--i:' + i + '">' + icon(l[2]) + l[3] + '</a>'; }).join('');
     $('#burger').onclick = function () {
       var o = document.body.classList.toggle('menu-open'); this.setAttribute('aria-expanded', o); $('#mmenu').setAttribute('aria-hidden', !o);
