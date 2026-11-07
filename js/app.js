@@ -33,6 +33,9 @@
       '</h3><p class="sum">' + esc(p.description) + '</p><div style="margin-top:auto;padding-top:.5rem"><div class="pr-row"><span>ความคืบหน้า</span><b>' +
       p.progress + '%</b></div><div class="bar" style="--p:' + p.progress + '"><i></i></div></div></div></a>';
   }
+  function searchBox(id, ph) {
+    return '<label class="search">' + icon('search') + '<input type="search" id="' + id + '" placeholder="' + ph + '" aria-label="' + ph + '" autocomplete="off"></label>';
+  }
   function chips(items, id) {
     return '<div class="filters" id="' + id + '">' + items.map(function (c, i) {
       return '<button class="chip' + (i === 0 ? ' on' : '') + '" data-c="' + esc(c[0]) + '">' + esc(c[1]) + '</button>';
@@ -139,14 +142,16 @@
     return {
       title: 'ข่าวและกิจกรรม',
       html: pageHero('ข่าวและกิจกรรม', 'ข่าวสารและกิจกรรมชุมชน', 'ติดตามประกาศ กิจกรรม และความเคลื่อนไหวล่าสุดของชุมชน') +
-        '<section class="section"><div class="container">' + chips(cats, 'nf') + '<div class="grid g3" id="ng"></div></div></section>',
+        '<section class="section"><div class="container"><div class="tools">' + chips(cats, 'nf') + searchBox('nq', 'ค้นหาข่าว...') + '</div><div class="grid g3" id="ng"></div></div></section>',
       after: function () {
-        function draw(c) {
-          var l = S.news.filter(function (n) { return c === 'ทั้งหมด' || n.category === c; });
-          $('#ng').innerHTML = l.length ? l.map(function (n, i) { return newsCard(n, i * 0.06); }).join('') : empty('ยังไม่มีข่าวในหมวดนี้');
+        var cat = 'ทั้งหมด';
+        function draw() {
+          var q = $('#nq').value.trim().toLowerCase();
+          var l = S.news.filter(function (n) { return (cat === 'ทั้งหมด' || n.category === cat) && (!q || (n.title + ' ' + n.summary + ' ' + n.category).toLowerCase().indexOf(q) >= 0); });
+          $('#ng').innerHTML = l.length ? l.map(function (n, i) { return newsCard(n, i * 0.06); }).join('') : empty('ไม่พบข่าวที่ตรงกับเงื่อนไข');
           observe();
         }
-        bindChips('nf', draw); draw('ทั้งหมด');
+        bindChips('nf', function (c) { cat = c; draw(); }); $('#nq').oninput = draw; draw();
       }
     };
   }
@@ -158,9 +163,14 @@
       title: n.title,
       html: pageHero(n.category + ' · ' + fmtDate(n.date), n.title, '', ['#/news', 'กลับไปข่าวทั้งหมด']) +
         '<div class="container"><div class="article">' + (img ? '<div class="art-img"><img src="' + esc(img) + '" alt=""></div>' : '') +
-        '<div class="art-body">' + paragraphs(n.content || n.summary) + '<div style="margin-top:1.4rem"><button class="btn btn-outline btn-sm" id="cp">' + icon('copy') + ' คัดลอกลิงก์ข่าว</button></div></div></div>' +
+        '<div class="art-body">' + paragraphs(n.content || n.summary) + '<div class="share"><span>แชร์ข่าวนี้</span><a class="btn btn-outline btn-sm" id="sh-line" target="_blank" rel="noopener">' + icon('chat') + ' LINE</a><a class="btn btn-outline btn-sm" id="sh-fb" target="_blank" rel="noopener">' + icon('facebook') + ' Facebook</a><button class="btn btn-outline btn-sm" id="cp">' + icon('copy') + ' คัดลอกลิงก์</button></div></div></div>' +
         (more.length ? '<div class="section"><div class="sec-head"><h2 style="font-size:1.6rem">ข่าวอื่นๆ</h2></div><div class="grid g3">' + more.map(function (x, i) { return newsCard(x, i * 0.08); }).join('') + '</div></div>' : '') + '</div><div style="height:90px"></div>',
-      after: function () { $('#cp').onclick = function () { copyText(location.href); }; }
+      after: function () {
+        var u = encodeURIComponent(location.href);
+        $('#sh-line').href = 'https://social-plugins.line.me/lineit/share?url=' + u;
+        $('#sh-fb').href = 'https://www.facebook.com/sharer/sharer.php?u=' + u;
+        $('#cp').onclick = function () { copyText(location.href); };
+      }
     };
   }
 
@@ -170,14 +180,16 @@
     return {
       title: 'โครงการพัฒนา',
       html: pageHero('โครงการพัฒนา', 'โครงการพัฒนาชุมชน', 'ติดตามความคืบหน้า งบประมาณ และผลลัพธ์ของทุกโครงการอย่างโปร่งใส') +
-        '<section class="section"><div class="container">' + chips(f, 'pf') + '<div class="grid g3" id="pg"></div></div></section>',
+        '<section class="section"><div class="container"><div class="tools">' + chips(f, 'pf') + searchBox('pq', 'ค้นหาโครงการ...') + '</div><div class="grid g3" id="pg"></div></div></section>',
       after: function () {
-        function draw(c) {
-          var l = S.projects.filter(function (p) { return c === 'all' || p.status === c; });
-          $('#pg').innerHTML = l.length ? l.map(function (p, i) { return projectCard(p, i * 0.06); }).join('') : empty('ยังไม่มีโครงการในหมวดนี้');
+        var st = 'all';
+        function draw() {
+          var q = $('#pq').value.trim().toLowerCase();
+          var l = S.projects.filter(function (p) { return (st === 'all' || p.status === st) && (!q || (p.title + ' ' + p.description + ' ' + p.location).toLowerCase().indexOf(q) >= 0); });
+          $('#pg').innerHTML = l.length ? l.map(function (p, i) { return projectCard(p, i * 0.06); }).join('') : empty('ไม่พบโครงการที่ตรงกับเงื่อนไข');
           observe();
         }
-        bindChips('pf', draw); draw('all');
+        bindChips('pf', function (c) { st = c; draw(); }); $('#pq').oninput = draw; draw();
       }
     };
   }

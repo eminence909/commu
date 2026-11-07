@@ -412,3 +412,13 @@ main { min-height: 60vh; }
 .trk.light input { color: var(--text); }
 .trk.light input::placeholder { color: var(--muted); }
 .code { font-weight: 600; letter-spacing: .06em; color: var(--teal); }
+
+/* ค้นหา + แชร์ */
+.tools { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; justify-content: space-between; margin-bottom: 1.8rem; }
+.tools .filters { margin: 0; flex: 1 1 320px; }
+.search { position: relative; flex: 0 1 280px; min-width: 210px; width: 100%; max-width: 360px; }
+.search .ic { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.search input { width: 100%; padding: .6rem 1rem .6rem 2.6rem; border-radius: 99px; border: 1.5px solid var(--line); background: #fff; outline: 0; transition: border-color .25s, box-shadow .25s; }
+.search input:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(23, 165, 143, .15); }
+.share { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px dashed var(--line); }
+.share span { color: var(--muted); font-size: .9rem; margin-right: .3rem; }
