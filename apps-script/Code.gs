@@ -26,7 +26,7 @@ function setup() {
     var cols = SHEETS[name];
     sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#d9f3ec');
     sh.getRange(1, 1, sh.getMaxRows(), cols.length).setNumberFormat('@'); // เก็บเป็นข้อความ กันวันที่เพี้ยน
-    sh.setFrozenRow(1);
+    sh.setFrozenRows(1);
   });
   var st = ss.getSheetByName('settings');
   if (st.getLastRow() < 2) {
