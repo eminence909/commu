@@ -8,6 +8,6 @@
  *                 (เมื่อใช้งานจริง รหัสผ่านจะตั้งใน Code.gs ฝั่ง Google)
  */
 window.SITE_CONFIG = {
-  API_URL: '',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxXG9i48rSW9S1nPGhmzq8tf7bnQjCJginKEMgIUIDr3gI2q-ISHpHybT53_rEnCA5_jg/exec',
   DEMO_PASSWORD: 'admin1234'
 };
