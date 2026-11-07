@@ -4,7 +4,7 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var view = $('#view');
-  var S = { ready: false, settings: {}, news: [], projects: [], reportStats: [] };
+  var S = { ready: false, settings: {}, news: [], projects: [], gallery: [], reportStats: [] };
   var CODES = 'cw_my_codes';
 
   function set(k, fb) { var v = S.settings[k]; return (v === undefined || v === null || v === '') ? (fb || '') : v; }
@@ -120,6 +120,7 @@
       '<section class="section"><div class="container"><div class="sec-head reveal"><div><span class="eyebrow">ข่าวและกิจกรรม</span><h2>ข่าวสารล่าสุด</h2></div><a class="btn btn-outline btn-sm" href="#/news">ดูทั้งหมด ' + icon('arrow-right') + '</a></div><div class="grid g3">' +
       (S.news.length ? S.news.slice(0, 3).map(function (n, i) { return newsCard(n, i * 0.1); }).join('') : empty('ยังไม่มีข่าว')) + '</div></div></section>' +
 
+      (S.gallery.length ? '<section class="section"><div class="container"><div class="sec-head reveal"><div><span class="eyebrow">แกลเลอรี่</span><h2>ภาพกิจกรรมล่าสุด</h2></div><a class="btn btn-outline btn-sm" href="#/gallery">ดูทั้งหมด ' + icon('arrow-right') + '</a></div><div class="gallery">' + galleryGrid(S.gallery.slice(0, 6)) + '</div></div></section>' : '') +
       '<section class="section"><div class="container"><div class="cta reveal"><div><h2>แจ้งปัญหาแล้ว อยากรู้ว่าไปถึงไหน?</h2><p>กรอกเลขติดตามที่ได้ตอนแจ้งเรื่อง เพื่อดูสถานะล่าสุดได้ทันที</p></div>' +
       '<form class="trk" id="homeTrk"><input id="homeCode" placeholder="เช่น RP-261106-AB12" aria-label="เลขติดตามเรื่อง" autocomplete="off"><button class="btn btn-primary" type="submit">ตรวจสอบ ' + icon('arrow-right') + '</button></form></div></div></section>' +
 
@@ -131,6 +132,7 @@
 
     return {
       title: 'หน้าแรก', html: html, after: function () {
+        bindGallery(S.gallery.slice(0, 6));
         $('#homeTrk').onsubmit = function (e) { e.preventDefault(); var c = $('#homeCode').value.trim(); if (c) location.hash = '#/track/' + encodeURIComponent(c.toUpperCase()); };
       }
     };
@@ -304,6 +306,51 @@
     };
   }
 
+  /* ---------- แกลเลอรี่ ---------- */
+  function galleryGrid(items) {
+    return items.map(function (g, i) {
+      var img = safeUrl(g.image);
+      return '<button class="gl reveal" style="--rd:' + (i % 6) * 0.06 + 's" data-gi="' + i + '" aria-label="ดูภาพ ' + esc(g.title) + '">' +
+        (img ? '<img src="' + esc(img) + '" alt="' + esc(g.title) + '" loading="lazy">' : '<div class="ph ' + toneOf(g.id) + '">' + icon('image') + '</div>') +
+        '<span class="gl-cap"><b>' + esc(g.title) + '</b><small>' + fmtDate(g.date, 1) + '</small></span></button>';
+    }).join('');
+  }
+  function bindGallery(items) {
+    $$('[data-gi]').forEach(function (b) { b.onclick = function () { openLightbox(items, Number(b.getAttribute('data-gi'))); }; });
+  }
+  function openLightbox(items, i) {
+    var box = document.createElement('div'), x0 = 0;
+    box.className = 'lb'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+    box.innerHTML = '<button class="lb-x" aria-label="ปิด">' + icon('x') + '</button><button class="lb-n lb-prev" aria-label="ภาพก่อนหน้า">' + icon('arrow-left') + '</button><button class="lb-n lb-next" aria-label="ภาพถัดไป">' + icon('arrow-right') + '</button><figure class="lb-fig"></figure>';
+    document.body.appendChild(box); document.body.style.overflow = 'hidden';
+    function show(k) {
+      i = (k + items.length) % items.length;
+      var g = items[i], img = safeUrl(g.image), fig = $('.lb-fig', box);
+      fig.classList.remove('swap'); void fig.offsetWidth; fig.classList.add('swap');
+      fig.innerHTML = (img ? '<img src="' + esc(img) + '" alt="' + esc(g.title) + '">' : '<div class="ph ' + toneOf(g.id) + ' lb-ph">' + icon('image') + '</div>') +
+        '<figcaption><b>' + esc(g.title) + '</b><span>' + fmtDate(g.date) + '</span>' + (g.caption ? '<p>' + esc(g.caption) + '</p>' : '') + '<small>' + (i + 1) + ' / ' + items.length + '</small></figcaption>';
+    }
+    function close() {
+      document.removeEventListener('keydown', key); window.removeEventListener('hashchange', close);
+      document.body.style.overflow = ''; box.classList.remove('in'); box.classList.add('out'); setTimeout(function () { box.remove(); }, 300);
+    }
+    function key(e) { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') show(i - 1); else if (e.key === 'ArrowRight') show(i + 1); }
+    $('.lb-x', box).onclick = close; $('.lb-prev', box).onclick = function () { show(i - 1); }; $('.lb-next', box).onclick = function () { show(i + 1); };
+    box.addEventListener('click', function (e) { if (e.target === box) close(); });
+    box.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    box.addEventListener('touchend', function (e) { var dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) show(i + (dx < 0 ? 1 : -1)); });
+    document.addEventListener('keydown', key); window.addEventListener('hashchange', close);
+    show(i); requestAnimationFrame(function () { box.classList.add('in'); });
+  }
+  function galleryView() {
+    return {
+      title: 'แกลเลอรี่',
+      html: pageHero('แกลเลอรี่', 'ภาพกิจกรรมของชุมชน', 'รวมภาพบรรยากาศกิจกรรมและความประทับใจของคนในชุมชน') +
+        '<section class="section"><div class="container">' + (S.gallery.length ? '<div class="gallery">' + galleryGrid(S.gallery) + '</div>' : '<div class="grid">' + empty('ยังไม่มีภาพกิจกรรม') + '</div>') + '</div></section><div style="height:90px"></div>',
+      after: function () { bindGallery(S.gallery); }
+    };
+  }
+
   /* ---------- ติดต่อ ---------- */
   function contactView() {
     var items = [['phone', 'โทรศัพท์', set('phone'), set('phone') ? 'tel:' + set('phone').replace(/[^0-9+]/g, '') : ''], ['mail', 'อีเมล', set('email'), set('email') ? 'mailto:' + set('email') : ''],
@@ -358,7 +405,7 @@
     var h = location.hash.replace(/^#\/?/, '').split('/');
     var page = h[0] || 'home', arg = h[1] ? decodeURIComponent(h.slice(1).join('/')) : '';
     var b = { home: homeView, news: function () { return arg ? newsDetail(arg) : newsView(); }, projects: function () { return arg ? projectDetail(arg) : projectsView(); },
-      report: reportView, track: function () { return trackView(arg); }, contact: contactView }[page];
+      gallery: galleryView, report: reportView, track: function () { return trackView(arg); }, contact: contactView }[page];
     document.body.classList.remove('menu-open');
     view.classList.add('leaving');
     sleep(first || prefersReduced ? 0 : 170).then(function () {
@@ -380,13 +427,13 @@
     var tel = set('phone'), line = safeUrl(set('lineUrl')), fb = safeUrl(set('facebookUrl'));
     $('#footer').innerHTML = '<div class="container"><div class="f-grid"><div><div class="brand"><span class="brand-mark">' + icon('sprout') + '</span><b style="max-width:none">' + esc(name) + '</b></div><p>' + esc(set('siteTagline')) + '</p>' +
       '<div class="social">' + (fb ? '<a href="' + esc(fb) + '" target="_blank" rel="noopener" aria-label="Facebook">' + icon('facebook') + '</a>' : '') + (line ? '<a href="' + esc(line) + '" target="_blank" rel="noopener" aria-label="LINE">' + icon('chat') + '</a>' : '') + '</div></div>' +
-      '<div><h4>เมนู</h4><a href="#/news">ข่าวและกิจกรรม</a><a href="#/projects">โครงการพัฒนา</a><a href="#/report">แจ้งปัญหา</a><a href="#/track">ติดตามสถานะ</a></div>' +
+      '<div><h4>เมนู</h4><a href="#/news">ข่าวและกิจกรรม</a><a href="#/projects">โครงการพัฒนา</a><a href="#/gallery">แกลเลอรี่</a><a href="#/report">แจ้งปัญหา</a><a href="#/track">ติดตามสถานะ</a></div>' +
       '<div><h4>ติดต่อ</h4><p>' + esc(tel) + '</p><p>' + esc(set('email')) + '</p><p>' + esc(set('officeHours')) + '</p></div></div>' +
       '<div class="f-bottom"><span>© ' + (new Date().getFullYear() + 543) + ' ' + esc(name) + '</span><a href="admin.html">สำหรับผู้ดูแลระบบ</a></div></div>';
   }
   function initShell() {
     $('#brandMark').innerHTML = icon('sprout'); $('#ctaIc').innerHTML = icon('megaphone');
-    var links = [['home', '#/', 'home', 'หน้าแรก'], ['news', '#/news', 'newspaper', 'ข่าวและกิจกรรม'], ['projects', '#/projects', 'layers', 'โครงการพัฒนา'], ['report', '#/report', 'megaphone', 'แจ้งปัญหา'], ['track', '#/track', 'search', 'ติดตามสถานะ'], ['contact', '#/contact', 'phone', 'ติดต่อ']];
+    var links = [['home', '#/', 'home', 'หน้าแรก'], ['news', '#/news', 'newspaper', 'ข่าวและกิจกรรม'], ['projects', '#/projects', 'layers', 'โครงการพัฒนา'], ['gallery', '#/gallery', 'image', 'แกลเลอรี่'], ['report', '#/report', 'megaphone', 'แจ้งปัญหา'], ['track', '#/track', 'search', 'ติดตามสถานะ'], ['contact', '#/contact', 'phone', 'ติดต่อ']];
     $('#mmenu').innerHTML = links.map(function (l, i) { return '<a href="' + l[1] + '" data-p="' + l[0] + '" style="--i:' + i + '">' + icon(l[2]) + l[3] + '</a>'; }).join('');
     $('#burger').onclick = function () {
       var o = document.body.classList.toggle('menu-open'); this.setAttribute('aria-expanded', o); $('#mmenu').setAttribute('aria-hidden', !o);
@@ -414,10 +461,19 @@
   function boot() {
     loading();
     API.getPublic().then(function (d) {
-      S.settings = d.settings || {}; S.news = d.news || []; S.reportStats = d.reportStats || [];
+      S.settings = d.settings || {}; S.news = d.news || []; S.gallery = d.gallery || []; S.reportStats = d.reportStats || [];
       S.projects = (d.projects || []).map(function (p) { return Object.assign({}, p, { progress: Math.max(0, Math.min(100, Number(p.progress) || 0)), budget: Number(p.budget) || 0 }); });
       S.ready = true; applySettings(); route();
     }).catch(function (e) { loading(e.message, true); });
   }
+  // ถ้ารูปโหลดไม่ได้ (ลิงก์เสีย) ให้แสดงกล่องสีแทน ไม่ให้เห็นไอคอนรูปแตก
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'IMG' || !t.closest('.thumb, .gl, .art-img')) return;
+    var ph = document.createElement('div');
+    ph.className = 'ph tone' + fallbackTone(t.getAttribute('alt'));
+    ph.innerHTML = icon('image');
+    t.replaceWith(ph);
+  }, true);
   initShell(); boot();
 })();

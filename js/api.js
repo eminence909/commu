@@ -70,6 +70,7 @@
           settings: d.settings,
           news: d.news.filter(function (n) { return n.published !== false; }).sort(byDateDesc),
           projects: d.projects,
+          gallery: (d.gallery || []).slice().sort(byDateDesc),
           // ส่งเฉพาะสถานะและเวลา ไม่ส่งข้อมูลส่วนตัวของผู้แจ้ง
           reportStats: d.reports.map(function (r) { return { status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt }; })
         };
@@ -127,6 +128,7 @@
         requireAuth();
         var d = clone(db());
         d.news.sort(byDateDesc);
+        d.gallery = (d.gallery || []).sort(byDateDesc);
         d.reports.sort(function (a, b) { return String(b.createdAt).localeCompare(String(a.createdAt)); });
         return d;
       });
@@ -136,7 +138,7 @@
       if (!demo) return remote('saveItem', { sheet: sheet, item: item }, true);
       return wait(250).then(function () {
         requireAuth();
-        var d = db(), arr = d[sheet], idf = sheet === 'reports' ? 'code' : 'id';
+        var d = db(); d[sheet] = d[sheet] || []; var arr = d[sheet], idf = sheet === 'reports' ? 'code' : 'id';
         var i = arr.findIndex(function (x) { return x[idf] === item[idf]; });
         if (i >= 0) arr[i] = item; else arr.unshift(item);
         persist(d);

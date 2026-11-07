@@ -12,9 +12,10 @@ var SHEETS = {
   settings: ['key', 'value'],
   news: ['id', 'title', 'category', 'date', 'summary', 'content', 'image', 'published'],
   projects: ['id', 'title', 'status', 'progress', 'budget', 'startDate', 'endDate', 'location', 'description', 'image'],
-  reports: ['code', 'createdAt', 'updatedAt', 'name', 'phone', 'category', 'location', 'lat', 'lng', 'detail', 'image', 'status', 'note', 'consent']
+  reports: ['code', 'createdAt', 'updatedAt', 'name', 'phone', 'category', 'location', 'lat', 'lng', 'detail', 'image', 'status', 'note', 'consent'],
+  gallery: ['id', 'title', 'date', 'caption', 'image']
 };
-var ID_FIELD = { news: 'id', projects: 'id', reports: 'code' };
+var ID_FIELD = { news: 'id', projects: 'id', reports: 'code', gallery: 'id' };
 var IMAGE_FOLDER = 'community-web-images';
 var MAX_REPORTS_PER_HOUR = 40;
 
@@ -79,6 +80,8 @@ function rows_(name) {
     var o = {}; cols.forEach(function (c, i) { o[c] = cell_(r[i]); }); return o;
   }).filter(function (o) { return o[cols[0]] !== ''; });
 }
+// อ่านชีตแบบไม่พัง ถ้ายังไม่มีชีตนั้น (เช่น ยังไม่ได้รัน setup หลังอัปเดต)
+function safeRows_(name) { try { return rows_(name); } catch (e) { return []; } }
 function findRow_(name, id) {
   var sh = sheet_(name), n = sh.getLastRow() - 1;
   if (n < 1) return -1;
@@ -99,6 +102,7 @@ function getPublic_() {
     settings: settings_(),
     news: sortDesc_(news_().filter(function (n) { return n.published; }), 'date'),
     projects: rows_('projects'),
+    gallery: sortDesc_(safeRows_('gallery'), 'date'),
     reportStats: rows_('reports').map(function (r) { return { status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt }; })
   };
 }
@@ -134,7 +138,7 @@ function trackReport_(code) {
 
 /* ===== ฝั่งแอดมิน ===== */
 function adminGetAll_() {
-  return { settings: settings_(), news: sortDesc_(news_(), 'date'), projects: rows_('projects'), reports: sortDesc_(rows_('reports'), 'createdAt') };
+  return { settings: settings_(), news: sortDesc_(news_(), 'date'), projects: rows_('projects'), gallery: sortDesc_(safeRows_('gallery'), 'date'), reports: sortDesc_(rows_('reports'), 'createdAt') };
 }
 function saveItem_(name, item) {
   if (!ID_FIELD[name] || name === 'reports') throw new Error('ชีตไม่ถูกต้อง');

@@ -5,7 +5,7 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var app = $('#app'), A = null, cur = 'dash', rf = { st: 'all', q: '' };
 
-  var NAV = [['dash', 'dashboard', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา'], ['projects', 'layers', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม'], ['settings', 'settings', 'ตั้งค่าเว็บ']];
+  var NAV = [['dash', 'dashboard', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา'], ['projects', 'layers', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม'], ['gallery', 'image', 'แกลเลอรี่'], ['settings', 'settings', 'ตั้งค่าเว็บ']];
   var uid = function (p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); };
   var opts = function (arr, sel) { return arr.map(function (o) { var v = o[0], l = o[1]; return '<option value="' + esc(v) + '"' + (String(v) === String(sel) ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join(''); };
   var stOpts = function (map) { return Object.keys(map).map(function (k) { return [k, map[k].label]; }); };
@@ -82,7 +82,7 @@
   function load() {
     return API.adminGetAll().then(function (d) {
       d.projects = d.projects.map(function (p) { return Object.assign({}, p, { progress: Number(p.progress) || 0, budget: Number(p.budget) || 0 }); });
-      A = d; shell();
+      A = d; A.gallery = A.gallery || []; shell();
     });
   }
 
@@ -105,7 +105,7 @@
   function render() {
     $$('.side nav button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === cur); });
     moveInd();
-    var mn = $('#mn'), v = { dash: dash, reports: reports, projects: projects, news: news, settings: settings }[cur]();
+    var mn = $('#mn'), v = { dash: dash, reports: reports, projects: projects, news: news, gallery: gallery, settings: settings }[cur]();
     mn.innerHTML = '<div class="pane">' + (API.demo ? '<div class="banner"><span>โหมดสาธิต: ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น (ดูวิธีเชื่อม Google Sheet ใน README)</span><button class="btn btn-outline btn-sm" id="resetBtn">รีเซ็ตข้อมูลตัวอย่าง</button></div>' : '') + v.html + '</div>';
     if (API.demo) $('#resetBtn').onclick = function () { confirmBox('รีเซ็ตข้อมูลทั้งหมดกลับเป็นข้อมูลตัวอย่าง?', function () { API.resetDemo().then(load); }); };
     v.after && v.after();
@@ -197,6 +197,7 @@
         var b = this, v = readForm(o.fields(), m);
         if (!v.title) return toast('กรุณากรอกหัวข้อ', 'err');
         if (v.image && !safeUrl(v.image)) return toast('ลิงก์รูปต้องขึ้นต้นด้วย http:// หรือ https://', 'err');
+        if (o.needImage && !v.image) return toast('กรุณาเพิ่มรูปภาพ', 'err');
         var rec = Object.assign({}, item, v, { id: item.id });
         busy(b, true);
         API.saveItem(o.sheet, rec).then(function () {
@@ -228,6 +229,16 @@
         var cats = Array.from(new Set(TH.NEWS_CATS.concat(A.news.map(function (n) { return n.category; }).filter(Boolean)))).map(function (c) { return [c, c]; });
         return [{ k: 'title', l: 'หัวข้อข่าว', req: 1, full: 1 }, { k: 'category', l: 'หมวดหมู่', t: 'select', o: cats }, { k: 'date', l: 'วันที่', t: 'date' }, { k: 'summary', l: 'สรุปสั้นๆ (แสดงบนการ์ด)', t: 'textarea', h: 70 }, { k: 'content', l: 'เนื้อหาเต็ม', t: 'textarea', h: 170, s: 'ขึ้นย่อหน้าใหม่ด้วยการกด Enter' }, { k: 'image', l: 'รูปปก', t: 'image' }, { k: 'published', l: 'เผยแพร่ข่าวนี้บนหน้าเว็บ (ไม่ติ๊ก = ฉบับร่าง)', t: 'check' }];
       }
+    });
+  }
+
+  function gallery() {
+    return listPage({
+      sheet: 'gallery', title: 'แกลเลอรี่ภาพกิจกรรม', sub: 'เพิ่มภาพกิจกรรมพร้อมคำอธิบาย แสดงที่หน้า "แกลเลอรี่"', noun: 'ภาพ', col1: 'ภาพ', col2: 'วันที่', needImage: true,
+      sub1: function (x) { return esc(x.caption || ''); },
+      cell: function (x) { return fmtDate(x.date, 1); },
+      blank: function () { return { id: uid('g_'), title: '', date: today(), caption: '', image: '' }; },
+      fields: function () { return [{ k: 'title', l: 'ชื่อภาพ / กิจกรรม', req: 1, full: 1 }, { k: 'date', l: 'วันที่', t: 'date' }, { k: 'image', l: 'รูปภาพ', t: 'image', req: 1 }, { k: 'caption', l: 'คำอธิบายภาพ', t: 'textarea', h: 80 }]; }
     });
   }
 

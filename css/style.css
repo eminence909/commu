@@ -422,3 +422,29 @@ main { min-height: 60vh; }
 .search input:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(23, 165, 143, .15); }
 .share { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px dashed var(--line); }
 .share span { color: var(--muted); font-size: .9rem; margin-right: .3rem; }
+
+/* แกลเลอรี่ + ดูภาพขยาย */
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.1rem; }
+.gl { position: relative; aspect-ratio: 4 / 3; border-radius: 20px; overflow: hidden; background: var(--ink2); box-shadow: var(--shadow); text-align: left; transition: transform .45s var(--ease), box-shadow .45s, opacity .9s var(--ease); }
+.gl:hover { transform: translateY(-6px); box-shadow: 0 26px 44px -20px rgba(8, 50, 44, .45); }
+.gl img { width: 100%; height: 100%; object-fit: cover; transition: transform .9s var(--ease); }
+.gl:hover img { transform: scale(1.08); }
+.gl-cap { position: absolute; inset: auto 0 0 0; padding: 2.4rem 1rem .9rem; color: #fff; display: flex; flex-direction: column; background: linear-gradient(transparent, rgba(4, 24, 21, .88)); transform: translateY(18px); opacity: 0; transition: transform .45s var(--ease), opacity .35s; }
+.gl:hover .gl-cap, .gl:focus-visible .gl-cap { transform: none; opacity: 1; }
+.gl-cap small { color: var(--mint); }
+@media (hover: none) { .gl-cap { transform: none; opacity: 1; } }
+@media (min-width: 900px) { .gl:nth-child(7n+1) { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; } }
+.lb { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 60px 16px; background: rgba(3, 18, 16, .93); backdrop-filter: blur(10px); opacity: 0; transition: opacity .3s; }
+.lb.in { opacity: 1; } .lb.out { opacity: 0; }
+.lb-fig { max-width: min(1000px, 100%); max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: .9rem; color: #fff; text-align: center; }
+.lb-fig.swap { animation: lbin .45s var(--ease); }
+@keyframes lbin { from { opacity: 0; transform: scale(.96) translateY(10px); } }
+.lb-fig img { max-width: 100%; max-height: calc(100vh - 210px); border-radius: 18px; object-fit: contain; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6); }
+.lb-ph { position: relative; inset: auto; width: min(640px, 86vw); aspect-ratio: 4 / 3; border-radius: 18px; overflow: hidden; }
+.lb-fig figcaption { display: flex; flex-direction: column; gap: .2rem; max-width: 640px; }
+.lb-fig figcaption span, .lb-fig figcaption small { color: rgba(255, 255, 255, .7); font-size: .88rem; }
+.lb-fig figcaption p { color: rgba(255, 255, 255, .88); margin-top: .3rem; }
+.lb-x, .lb-n { position: absolute; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .12); color: #fff; font-size: 1.2rem; transition: background .25s, color .25s; }
+.lb-x:hover, .lb-n:hover { background: var(--mint); color: var(--ink); }
+.lb-x { top: 14px; right: 14px; } .lb-prev { left: 14px; top: 50%; margin-top: -24px; } .lb-next { right: 14px; top: 50%; margin-top: -24px; }
+@media (max-width: 640px) { .lb-prev { left: 6px; top: auto; bottom: 14px; margin: 0; } .lb-next { right: 6px; top: auto; bottom: 14px; margin: 0; } }
