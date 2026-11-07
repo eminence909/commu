@@ -5,7 +5,7 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var app = $('#app'), A = null, cur = 'dash', rf = { st: 'all', q: '' }, mf = 'all';
 
-  var NAV = [['dash', 'dashboard', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา'], ['map', 'pin', 'แผนที่'], ['projects', 'layers', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม'], ['gallery', 'image', 'แกลเลอรี่'], ['settings', 'settings', 'ตั้งค่าเว็บ']];
+  var NAV = [['dash', 'dashboard', 'ภาพรวม', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา', 'แจ้งปัญหา'], ['map', 'pin', 'แผนที่', 'แผนที่'], ['projects', 'layers', 'โครงการ', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม', 'ข่าว'], ['gallery', 'image', 'แกลเลอรี่', 'ภาพ'], ['settings', 'settings', 'ตั้งค่าเว็บ', 'ตั้งค่า']];
   var uid = function (p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); };
   var opts = function (arr, sel) { return arr.map(function (o) { var v = o[0], l = o[1]; return '<option value="' + esc(v) + '"' + (String(v) === String(sel) ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join(''); };
   var stOpts = function (map) { return Object.keys(map).map(function (k) { return [k, map[k].label]; }); };
@@ -90,7 +90,7 @@
   function shell() {
     var nw = A.reports.filter(function (r) { return r.status === 'new'; }).length;
     app.innerHTML = '<div class="adm"><aside class="side"><div class="brand"><span class="brand-mark">' + icon('sprout') + '</span><b>แอดมิน</b></div><nav><span class="side-ind"></span>' +
-      NAV.map(function (n) { return '<button data-v="' + n[0] + '">' + icon(n[1]) + '<span>' + n[2] + '</span>' + (n[0] === 'reports' && nw ? '<i class="cnt">' + nw + '</i>' : '') + '</button>'; }).join('') + '</nav>' +
+      NAV.map(function (n) { return '<button data-v="' + n[0] + '">' + icon(n[1]) + '<span class="lg">' + n[2] + '</span><span class="sh">' + n[3] + '</span>' + (n[0] === 'reports' && nw ? '<i class="cnt">' + nw + '</i>' : '') + '</button>'; }).join('') + '</nav>' +
       '<div class="foot"><a href="index.html" target="_blank" rel="noopener">' + icon('eye') + ' ดูหน้าเว็บ</a><button id="lo">' + icon('logout') + '<span> ออกจากระบบ</span></button></div></aside><main class="main" id="mn"></main></div>';
     $$('.side nav button').forEach(function (b) { b.onclick = function () { cur = b.getAttribute('data-v'); render(); }; });
     $('#lo').onclick = function () { API.logout(); A = null; loginView(); };
