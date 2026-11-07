@@ -466,17 +466,29 @@
     S.settings = d.settings || {}; S.news = d.news || []; S.gallery = d.gallery || []; S.reportStats = d.reportStats || [];
     S.projects = (d.projects || []).map(function (p) { return Object.assign({}, p, { progress: Math.max(0, Math.min(100, Number(p.progress) || 0)), budget: Number(p.budget) || 0 }); });
   }
-  function boot() {
-    var KEY = 'cw_pub_cache_v1', cached = null, raw = '';
-    try { raw = localStorage.getItem(KEY) || ''; cached = raw ? JSON.parse(raw) : null; } catch (e) { cached = null; }
-    if (cached && cached.news) { apply(cached); S.ready = true; applySettings(); route(); } else loading();
-    API.getPublic().then(function (d) {
+  var KEY = 'cw_pub_cache_v1', lastRaw = '';
+  function safeToRerender() {
+    var a = document.activeElement, t = a && a.tagName;
+    return !(t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') && !/^#\/report/.test(location.hash) && !document.querySelector('.lightbox, .lb');
+  }
+  function refresh(first) {
+    return API.getPublic().then(function (d) {
       var now = JSON.stringify(d);
       try { localStorage.setItem(KEY, now); } catch (e) { /* ข้าม */ }
-      if (cached && now === raw) return;
-      apply(d); S.ready = true; applySettings();
-      if (!/^#\/report/.test(location.hash)) route(); // ไม่รีเฟรชหน้าฟอร์มระหว่างที่ผู้ใช้กำลังกรอก
-    }).catch(function (e) { if (!S.ready) loading(e.message, true); });
+      if (now === lastRaw) return;
+      lastRaw = now; apply(d); S.ready = true; applySettings();
+      if (first || safeToRerender()) route(); // ถ้าผู้ใช้กำลังพิมพ์/กรอกฟอร์ม จะไม่รีเฟรชหน้า (ข้อมูลใหม่จะแสดงตอนเปลี่ยนหน้าถัดไป)
+    });
+  }
+  function boot() {
+    var cached = null;
+    try { lastRaw = localStorage.getItem(KEY) || ''; cached = lastRaw ? JSON.parse(lastRaw) : null; } catch (e) { cached = null; lastRaw = ''; }
+    if (cached && cached.news) { apply(cached); S.ready = true; applySettings(); route(); } else loading();
+    refresh(!S.ready).catch(function (e) { if (!S.ready) loading(e.message, true); });
+    // รีเฟรชข้อมูลเองทุก 90 วินาที (เฉพาะตอนเปิดหน้าเว็บอยู่) และทันทีเมื่อกลับมาที่แท็บ
+    var tick = function () { if (!document.hidden && S.ready) refresh(false).catch(function () { /* ข้ามรอบนี้ */ }); };
+    setInterval(tick, 90000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
   }
   // ถ้ารูปโหลดไม่ได้ (ลิงก์เสีย) ให้แสดงกล่องสีแทน ไม่ให้เห็นไอคอนรูปแตก
   document.addEventListener('error', function (e) {
