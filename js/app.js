@@ -7,7 +7,7 @@
   var S = { ready: false, settings: {}, news: [], projects: [], gallery: [], reportStats: [] };
   var CODES = 'cw_my_codes';
 
-  function set(k, fb) { var v = S.settings[k]; return (v === undefined || v === null || v === '') ? (fb || '') : v; }
+  function set(k, fb) { var v = S.settings[k]; return (v === undefined || v === null || v === '') ? (fb || '') : String(v); }
   function toneOf(id) { return 'tone' + fallbackTone(id); }
 
   /* ---------- ส่วนประกอบย่อย ---------- */
@@ -409,13 +409,17 @@
     document.body.classList.remove('menu-open');
     view.classList.add('leaving');
     sleep(first || prefersReduced ? 0 : 170).then(function () {
-      var r = b ? b() : notFound();
+      var r;
+      try { r = b ? b() : notFound(); } catch (e) {
+        if (window.console) console.error(e);
+        r = { title: 'เกิดข้อผิดพลาด', html: pageHero('ขออภัย', 'แสดงหน้านี้ไม่สำเร็จ', 'กรุณาลองใหม่อีกครั้ง หรือกลับไปหน้าแรก') + '<div class="container section"><a class="btn btn-dark" href="#/">กลับหน้าแรก</a></div><div style="height:90px"></div>' };
+      }
       first = false;
       document.title = (page === 'home' ? set('siteName', 'เว็บไซต์พัฒนาชุมชน') : r.title + ' | ' + set('siteName', 'ชุมชน'));
       view.innerHTML = r.html;
       view.classList.remove('leaving'); view.classList.remove('entering'); void view.offsetWidth; view.classList.add('entering');
       window.scrollTo(0, 0); setActive(page); $('#nav').classList.remove('hide');
-      if (r.after) r.after();
+      try { if (r.after) r.after(); } catch (e2) { if (window.console) console.error(e2); }
       observe();
     });
   }
