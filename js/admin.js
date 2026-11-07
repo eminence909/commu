@@ -5,7 +5,7 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var app = $('#app'), A = null, cur = 'dash', rf = { st: 'all', q: '' }, mf = 'all';
 
-  var NAV = [['dash', 'dashboard', 'ภาพรวม', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา', 'แจ้งปัญหา'], ['map', 'pin', 'แผนที่', 'แผนที่'], ['projects', 'layers', 'โครงการ', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม', 'ข่าว'], ['gallery', 'image', 'แกลเลอรี่', 'ภาพ'], ['settings', 'settings', 'ตั้งค่าเว็บ', 'ตั้งค่า']];
+  var NAV = [['dash', 'dashboard', 'ภาพรวม', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา', 'ปัญหา'], ['map', 'pin', 'แผนที่', 'แผนที่'], ['projects', 'layers', 'โครงการ', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม', 'ข่าว'], ['gallery', 'image', 'แกลเลอรี่', 'ภาพ'], ['qr', 'qr', 'คิวอาร์โค้ดเว็บ', 'QR'], ['settings', 'settings', 'ตั้งค่าเว็บ', 'ตั้งค่า']];
   var uid = function (p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); };
   var opts = function (arr, sel) { return arr.map(function (o) { var v = o[0], l = o[1]; return '<option value="' + esc(v) + '"' + (String(v) === String(sel) ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join(''); };
   var stOpts = function (map) { return Object.keys(map).map(function (k) { return [k, map[k].label]; }); };
@@ -105,7 +105,7 @@
   function render() {
     $$('.side nav button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === cur); });
     moveInd();
-    var mn = $('#mn'), v = { dash: dash, reports: reports, map: mapView, projects: projects, news: news, gallery: gallery, settings: settings }[cur]();
+    var mn = $('#mn'), v = { dash: dash, reports: reports, map: mapView, projects: projects, news: news, gallery: gallery, qr: qrView, settings: settings }[cur]();
     mn.innerHTML = '<div class="pane">' + (API.demo ? '<div class="banner"><span>โหมดสาธิต: ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น (ดูวิธีเชื่อม Google Sheet ใน README)</span><button class="btn btn-outline btn-sm" id="resetBtn">รีเซ็ตข้อมูลตัวอย่าง</button></div>' : '') + v.html + '</div>';
     if (API.demo) $('#resetBtn').onclick = function () { confirmBox('รีเซ็ตข้อมูลทั้งหมดกลับเป็นข้อมูลตัวอย่าง?', function () { API.resetDemo().then(load); }); };
     v.after && v.after();
@@ -292,6 +292,51 @@
       blank: function () { return { id: uid('g_'), title: '', date: today(), caption: '', image: '' }; },
       fields: function () { return [{ k: 'title', l: 'ชื่อภาพ / กิจกรรม', req: 1, full: 1 }, { k: 'date', l: 'วันที่', t: 'date' }, { k: 'image', l: 'รูปภาพ', t: 'image', req: 1 }, { k: 'caption', l: 'คำอธิบายภาพ', t: 'textarea', h: 80 }]; }
     });
+  }
+
+  /* ---------- คิวอาร์โค้ดเว็บไซต์ ---------- */
+  function saveBlob(blob, name) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+  }
+  function qrView() {
+    var base = location.protocol === 'file:' ? location.href.replace(/admin\.html.*$/, '') : location.origin + location.pathname.replace(/admin\.html$/, '');
+    var saved = ''; try { saved = localStorage.getItem('cw_qr_url') || ''; } catch (e) { /* ข้าม */ }
+    return {
+      html: head('คิวอาร์โค้ดเว็บไซต์', 'ให้คนสแกนเพื่อเปิดเว็บ พิมพ์ติดประกาศ หรือแชร์ในกลุ่มได้') +
+        '<div class="box qr-box" style="margin-top:0"><div class="qr-prev"><img id="qimg" alt="คิวอาร์โค้ดเว็บไซต์" width="320" height="320"><p class="t-sub" id="qerr" style="white-space:normal"></p></div>' +
+        '<div class="qr-form"><div class="field"><label for="qurl">ลิงก์ที่ต้องการให้สแกนแล้วเปิด</label><input type="url" id="qurl" value="' + esc(saved || base) + '" autocomplete="off"><small id="qhint"></small></div>' +
+        '<div class="field"><label for="qsz">ขนาดไฟล์รูป PNG</label><select id="qsz"><option value="512">เล็ก (512 px)</option><option value="1024" selected>กลาง (1024 px) เหมาะกับการพิมพ์ทั่วไป</option><option value="2048">ใหญ่ (2048 px) สำหรับโปสเตอร์</option></select></div>' +
+        '<div class="qr-acts"><button class="btn btn-dark" id="qpng">' + icon('download') + ' บันทึกเป็นรูป PNG</button><button class="btn btn-outline" id="qsvg">' + icon('download') + ' บันทึกเป็น SVG</button><button class="btn btn-outline" id="qcp">' + icon('copy') + ' คัดลอกลิงก์</button><button class="btn btn-outline" id="qrs">' + icon('home') + ' ใช้ลิงก์ของเว็บนี้</button></div>' +
+        '<p class="qr-tip">ก่อนพิมพ์ ลองสแกนจากหน้าจอนี้ด้วยกล้องมือถือสักครั้งว่าเปิดเว็บถูกต้อง ควรพิมพ์ให้กว้างไม่ต่ำกว่า 3 ซม. และห้ามยืดภาพให้เบี้ยว ถ้ากดบันทึกบนมือถือหรือไอแพดไม่ได้ ให้กดค้างที่รูปคิวอาร์แล้วเลือกบันทึกรูป SVG เหมาะกับงานพิมพ์ขนาดใหญ่เพราะขยายแล้วไม่แตก</p></div></div>',
+      after: function () {
+        var q = null;
+        function draw() {
+          var u = $('#qurl').value.trim(), img = $('#qimg'), err = $('#qerr'), hint = $('#qhint');
+          try { localStorage.setItem('cw_qr_url', u); } catch (e) { /* ข้าม */ }
+          hint.textContent = /^file:|localhost|127\.0\.0\.1/i.test(u) ? 'ลิงก์นี้เปิดได้เฉพาะในเครื่องนี้ กรุณาใส่ลิงก์เว็บจริงที่ขึ้นออนไลน์แล้ว' : (u && !/^https?:\/\//i.test(u) ? 'ควรขึ้นต้นด้วย https://' : '');
+          if (!u) { q = null; img.removeAttribute('src'); err.textContent = 'กรุณาใส่ลิงก์'; return; }
+          try { q = QR.make(u); err.textContent = ''; img.src = QR.toCanvas(q, 640).toDataURL('image/png'); }
+          catch (e) { q = null; img.removeAttribute('src'); err.textContent = 'ลิงก์ยาวเกินไป (ไม่เกินประมาณ 200 ตัวอักษร)'; }
+        }
+        $('#qurl').oninput = draw;
+        $('#qrs').onclick = function () { $('#qurl').value = base; draw(); };
+        $('#qpng').onclick = function () {
+          if (!q) return toast('ยังไม่มีคิวอาร์โค้ดให้บันทึก', 'err');
+          QR.toCanvas(q, Number($('#qsz').value)).toBlob(function (b) { if (b) { saveBlob(b, 'qr-website.png'); toast('บันทึกรูป QR แล้ว'); } else toast('บันทึกไม่สำเร็จ', 'err'); }, 'image/png');
+        };
+        $('#qsvg').onclick = function () {
+          if (!q) return toast('ยังไม่มีคิวอาร์โค้ดให้บันทึก', 'err');
+          saveBlob(new Blob([QR.toSvg(q)], { type: 'image/svg+xml' }), 'qr-website.svg'); toast('บันทึกไฟล์ SVG แล้ว');
+        };
+        $('#qcp').onclick = function () {
+          var u = $('#qurl').value.trim(), ok = function () { toast('คัดลอกลิงก์แล้ว'); };
+          if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(u).then(ok, ok);
+          else { $('#qurl').select(); try { document.execCommand('copy'); } catch (e) { /* ข้าม */ } ok(); }
+        };
+        draw();
+      }
+    };
   }
 
   /* ---------- ตั้งค่าเว็บ ---------- */
