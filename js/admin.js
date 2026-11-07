@@ -3,9 +3,9 @@
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
-  var app = $('#app'), A = null, cur = 'dash', rf = { st: 'all', q: '' };
+  var app = $('#app'), A = null, cur = 'dash', rf = { st: 'all', q: '' }, mf = 'all';
 
-  var NAV = [['dash', 'dashboard', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา'], ['projects', 'layers', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม'], ['gallery', 'image', 'แกลเลอรี่'], ['settings', 'settings', 'ตั้งค่าเว็บ']];
+  var NAV = [['dash', 'dashboard', 'ภาพรวม'], ['reports', 'megaphone', 'เรื่องแจ้งปัญหา'], ['map', 'pin', 'แผนที่'], ['projects', 'layers', 'โครงการ'], ['news', 'newspaper', 'ข่าวและกิจกรรม'], ['gallery', 'image', 'แกลเลอรี่'], ['settings', 'settings', 'ตั้งค่าเว็บ']];
   var uid = function (p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); };
   var opts = function (arr, sel) { return arr.map(function (o) { var v = o[0], l = o[1]; return '<option value="' + esc(v) + '"' + (String(v) === String(sel) ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join(''); };
   var stOpts = function (map) { return Object.keys(map).map(function (k) { return [k, map[k].label]; }); };
@@ -105,7 +105,7 @@
   function render() {
     $$('.side nav button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === cur); });
     moveInd();
-    var mn = $('#mn'), v = { dash: dash, reports: reports, projects: projects, news: news, gallery: gallery, settings: settings }[cur]();
+    var mn = $('#mn'), v = { dash: dash, reports: reports, map: mapView, projects: projects, news: news, gallery: gallery, settings: settings }[cur]();
     mn.innerHTML = '<div class="pane">' + (API.demo ? '<div class="banner"><span>โหมดสาธิต: ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น (ดูวิธีเชื่อม Google Sheet ใน README)</span><button class="btn btn-outline btn-sm" id="resetBtn">รีเซ็ตข้อมูลตัวอย่าง</button></div>' : '') + v.html + '</div>';
     if (API.demo) $('#resetBtn').onclick = function () { confirmBox('รีเซ็ตข้อมูลทั้งหมดกลับเป็นข้อมูลตัวอย่าง?', function () { API.resetDemo().then(load); }); };
     v.after && v.after();
@@ -172,6 +172,58 @@
   }
   function del(sheet, id) {
     API.deleteItem(sheet, id).then(function () { A[sheet] = A[sheet].filter(function (x) { return (x.code || x.id) !== id; }); toast('ลบแล้ว'); shell(); }).catch(function (e) { toast(e.message, 'err'); });
+  }
+
+  /* ---------- แผนที่จุดแจ้งปัญหา ---------- */
+  var LEAFLET = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/';
+  var COLORS = { 'new': '#2f55b3', doing: '#d99a00', done: '#0c9d63' };
+  var leafletP = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (leafletP) return leafletP;
+    leafletP = new Promise(function (ok, bad) {
+      var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = LEAFLET + 'leaflet.css'; document.head.appendChild(css);
+      var s = document.createElement('script'); s.src = LEAFLET + 'leaflet.js';
+      s.onload = function () { if (window.L) ok(window.L); else { leafletP = null; bad(new Error('no L')); } };
+      s.onerror = function () { leafletP = null; bad(new Error('โหลดแผนที่ไม่ได้')); };
+      document.head.appendChild(s);
+    });
+    return leafletP;
+  }
+  function drawMap(L, pts) {
+    var el = $('#map'); if (!el) return;
+    var map = L.map(el, { scrollWheelZoom: false }).setView([+pts[0].lat, +pts[0].lng], 15);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    var group = L.featureGroup(pts.map(function (r) {
+      return L.circleMarker([+r.lat, +r.lng], { radius: 11, color: '#fff', weight: 3, fillColor: COLORS[r.status] || COLORS['new'], fillOpacity: 1 })
+        .bindPopup('<b>' + esc(r.category) + '</b><br>' + esc(String(r.detail || '').slice(0, 90)) + '<br><button class="btn btn-dark btn-sm" style="margin-top:.5rem" data-open="' + esc(r.code) + '">เปิดรายละเอียด</button>');
+    })).addTo(map);
+    map.fitBounds(group.getBounds().pad(0.25), { maxZoom: 17 });
+    map.on('popupopen', function (e) { var b = e.popup.getElement().querySelector('[data-open]'); if (b) b.onclick = function () { reportModal(b.getAttribute('data-open')); }; });
+    setTimeout(function () { map.invalidateSize(); }, 350);
+  }
+  function mapFallback(pts) {
+    var el = $('#map'); if (!el) return;
+    el.style.height = 'auto';
+    el.innerHTML = '<div class="empty" style="border:0"><p>โหลดแผนที่ไม่ได้ (ตรวจสอบอินเทอร์เน็ต) เปิดดูทีละจุดผ่าน Google Maps แทน</p></div><table class="tbl"><tbody>' + pts.map(function (r) {
+      return '<tr><td><b class="code">' + esc(r.code) + '</b></td><td>' + esc(r.category) + '</td><td>' + status(TH.REPORT_STATUS, r.status) + '</td><td><a href="https://www.google.com/maps?q=' + encodeURIComponent(r.lat + ',' + r.lng) + '" target="_blank" rel="noopener" style="color:var(--teal)">เปิดแผนที่</a></td></tr>';
+    }).join('') + '</tbody></table>';
+  }
+  function mapView() {
+    var all = A.reports.filter(function (r) { var la = parseFloat(r.lat), lo = parseFloat(r.lng); return isFinite(la) && isFinite(lo) && (la || lo); });
+    var pts = all.filter(function (r) { return mf === 'all' || r.status === mf; });
+    var cnt = function (s) { return all.filter(function (r) { return s === 'all' || r.status === s; }).length; };
+    var f = [['all', 'ทั้งหมด']].concat(stOpts(TH.REPORT_STATUS));
+    return {
+      html: head('แผนที่จุดแจ้งปัญหา', 'แสดงเฉพาะเรื่องที่ผู้แจ้งกดปักตำแหน่ง (' + all.length + ' จาก ' + A.reports.length + ' เรื่อง)') +
+        '<div class="toolbar"><div class="filters">' + f.map(function (x) { return '<button class="chip' + (mf === x[0] ? ' on' : '') + '" data-m="' + x[0] + '">' + (COLORS[x[0]] ? '<i class="dot" style="background:' + COLORS[x[0]] + '"></i>' : '') + x[1] + ' (' + cnt(x[0]) + ')</button>'; }).join('') + '</div></div>' +
+        '<div class="box" style="margin-top:0;padding:.6rem">' + (pts.length ? '<div id="map"></div>' : '<div class="empty" style="border:0">' + icon('pin') + '<p>' + (all.length ? 'ไม่มีเรื่องในสถานะนี้' : 'ยังไม่มีเรื่องที่ปักตำแหน่ง (ผู้แจ้งต้องกดปุ่ม "ปักตำแหน่งปัจจุบัน" ในฟอร์มแจ้งปัญหา)') + '</p></div>') + '</div>',
+      after: function () {
+        $$('[data-m]').forEach(function (b) { b.onclick = function () { mf = b.getAttribute('data-m'); render(); }; });
+        if (!pts.length) return;
+        loadLeaflet().then(function (L) { drawMap(L, pts); }).catch(function () { mapFallback(pts); });
+      }
+    };
   }
 
   /* ---------- โครงการ / ข่าว (ใช้ตัวจัดการรายการร่วมกัน) ---------- */

@@ -68,11 +68,11 @@ window.DEMO_DATA = {
   ],
   reports: [
     { code: 'RP-260915-K7M2', createdAt: '2026-09-15T09:20:00.000Z', updatedAt: '2026-09-22T10:00:00.000Z', name: 'ตัวอย่าง ผู้แจ้ง', phone: '0800000000',
-      category: 'ไฟฟ้าและไฟส่องสว่าง', location: 'หน้าซอย 3', lat: '', lng: '', detail: 'ไฟส่องสว่างหน้าซอย 3 ดับมาหลายวัน', image: '', status: 'done', note: 'เปลี่ยนหลอดไฟเรียบร้อยแล้ว', consent: true },
+      category: 'ไฟฟ้าและไฟส่องสว่าง', location: 'หน้าซอย 3', lat: '13.759000', lng: '100.500500', detail: 'ไฟส่องสว่างหน้าซอย 3 ดับมาหลายวัน', image: '', status: 'done', note: 'เปลี่ยนหลอดไฟเรียบร้อยแล้ว', consent: true },
     { code: 'RP-261002-B4N8', createdAt: '2026-10-02T14:05:00.000Z', updatedAt: '2026-10-09T08:30:00.000Z', name: '', phone: '',
-      category: 'ขยะและสิ่งแวดล้อม', location: 'ริมคลองใกล้สะพาน', lat: '', lng: '', detail: 'มีขยะถูกทิ้งสะสมริมคลอง ส่งกลิ่นเหม็น', image: '', status: 'done', note: 'ทีมจิตอาสาเก็บขยะและติดป้ายห้ามทิ้งแล้ว', consent: true },
+      category: 'ขยะและสิ่งแวดล้อม', location: 'ริมคลองใกล้สะพาน', lat: '13.755200', lng: '100.498500', detail: 'มีขยะถูกทิ้งสะสมริมคลอง ส่งกลิ่นเหม็น', image: '', status: 'done', note: 'ทีมจิตอาสาเก็บขยะและติดป้ายห้ามทิ้งแล้ว', consent: true },
     { code: 'RP-261024-T9Q3', createdAt: '2026-10-24T07:45:00.000Z', updatedAt: '2026-10-26T09:10:00.000Z', name: 'ตัวอย่าง ผู้แจ้ง', phone: '0811111111',
-      category: 'ถนนและทางสัญจร', location: 'ถนนสายรองหน้าศาลา', lat: '', lng: '', detail: 'ถนนเป็นหลุมลึก รถจักรยานยนต์ล้มบ่อย', image: '', status: 'doing', note: 'ประสานช่างเข้าสำรวจแล้ว กำลังเตรียมวัสดุซ่อม', consent: true },
+      category: 'ถนนและทางสัญจร', location: 'ถนนสายรองหน้าศาลา', lat: '13.757100', lng: '100.503000', detail: 'ถนนเป็นหลุมลึก รถจักรยานยนต์ล้มบ่อย', image: '', status: 'doing', note: 'ประสานช่างเข้าสำรวจแล้ว กำลังเตรียมวัสดุซ่อม', consent: true },
     { code: 'RP-261103-W2X6', createdAt: '2026-11-03T16:40:00.000Z', updatedAt: '2026-11-03T16:40:00.000Z', name: '', phone: '',
       category: 'น้ำประปาและน้ำท่วม', location: 'ท้ายหมู่บ้าน', lat: '', lng: '', detail: 'น้ำประปาไหลอ่อนช่วงเย็นเป็นประจำ', image: '', status: 'new', note: '', consent: true }
   ]
