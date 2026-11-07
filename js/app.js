@@ -462,13 +462,21 @@
       '<div class="container section">' + (err ? '<button class="btn btn-dark" id="retry">ลองอีกครั้ง</button>' : '<div class="grid g3"><div class="sk" style="height:300px"></div><div class="sk" style="height:300px"></div><div class="sk" style="height:300px"></div></div>') + '</div>';
     if (err) $('#retry').onclick = boot;
   }
+  function apply(d) {
+    S.settings = d.settings || {}; S.news = d.news || []; S.gallery = d.gallery || []; S.reportStats = d.reportStats || [];
+    S.projects = (d.projects || []).map(function (p) { return Object.assign({}, p, { progress: Math.max(0, Math.min(100, Number(p.progress) || 0)), budget: Number(p.budget) || 0 }); });
+  }
   function boot() {
-    loading();
+    var KEY = 'cw_pub_cache_v1', cached = null, raw = '';
+    try { raw = localStorage.getItem(KEY) || ''; cached = raw ? JSON.parse(raw) : null; } catch (e) { cached = null; }
+    if (cached && cached.news) { apply(cached); S.ready = true; applySettings(); route(); } else loading();
     API.getPublic().then(function (d) {
-      S.settings = d.settings || {}; S.news = d.news || []; S.gallery = d.gallery || []; S.reportStats = d.reportStats || [];
-      S.projects = (d.projects || []).map(function (p) { return Object.assign({}, p, { progress: Math.max(0, Math.min(100, Number(p.progress) || 0)), budget: Number(p.budget) || 0 }); });
-      S.ready = true; applySettings(); route();
-    }).catch(function (e) { loading(e.message, true); });
+      var now = JSON.stringify(d);
+      try { localStorage.setItem(KEY, now); } catch (e) { /* ข้าม */ }
+      if (cached && now === raw) return;
+      apply(d); S.ready = true; applySettings();
+      if (!/^#\/report/.test(location.hash)) route(); // ไม่รีเฟรชหน้าฟอร์มระหว่างที่ผู้ใช้กำลังกรอก
+    }).catch(function (e) { if (!S.ready) loading(e.message, true); });
   }
   // ถ้ารูปโหลดไม่ได้ (ลิงก์เสีย) ให้แสดงกล่องสีแทน ไม่ให้เห็นไอคอนรูปแตก
   document.addEventListener('error', function (e) {
