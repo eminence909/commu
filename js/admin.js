@@ -147,7 +147,7 @@
   }
   function exportCsv() {
     var cols = ['code', 'createdAt', 'updatedAt', 'category', 'location', 'detail', 'name', 'phone', 'status', 'note', 'lat', 'lng'];
-    var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+    var q = function (v) { v = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
     var csv = '﻿' + cols.join(',') + '\n' + A.reports.map(function (r) { return cols.map(function (c) { return q(r[c]); }).join(','); }).join('\n');
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'reports.csv'; a.click(); URL.revokeObjectURL(a.href);
   }

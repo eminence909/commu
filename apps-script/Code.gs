@@ -49,7 +49,7 @@ function doPost(e) {
     if (a === 'getPublic') return ok_(getPublic_());
     if (a === 'submitReport') return ok_(submitReport_(req.report));
     if (a === 'trackReport') return ok_(trackReport_(req.code));
-    if (req.key !== ADMIN_PASSWORD) return fail_('รหัสผ่านไม่ถูกต้อง');
+    checkAdmin_(req.key);
     switch (a) {
       case 'adminLogin': return ok_({});
       case 'adminGetAll': return ok_(adminGetAll_());
@@ -61,6 +61,15 @@ function doPost(e) {
     }
     return fail_('ไม่รู้จักคำสั่ง');
   } catch (err) { return fail_(String(err && err.message || err)); }
+}
+
+/* ตรวจรหัสแอดมิน: ผิดเกิน 8 ครั้งใน 15 นาที จะถูกล็อกชั่วคราว (กันการเดาสุ่มรหัส) */
+function checkAdmin_(key) {
+  var cache = CacheService.getScriptCache(), n = Number(cache.get('fails') || 0);
+  if (n >= 8) throw new Error('ใส่รหัสผิดหลายครั้ง ระบบล็อกชั่วคราว กรุณารอ 15 นาที');
+  if (ADMIN_PASSWORD === 'เปลี่ยนรหัสผ่านตรงนี้' || String(ADMIN_PASSWORD).length < 8) throw new Error('ยังไม่ได้ตั้งรหัสแอดมินใน Code.gs (ต้องยาวอย่างน้อย 8 ตัว)');
+  if (String(key || '') !== ADMIN_PASSWORD) { cache.put('fails', String(n + 1), 900); throw new Error('รหัสผ่านไม่ถูกต้อง'); }
+  if (n) cache.remove('fails');
 }
 
 function ok_(data) { return ContentService.createTextOutput(JSON.stringify({ ok: true, data: data })).setMimeType(ContentService.MimeType.JSON); }
