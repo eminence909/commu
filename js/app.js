@@ -12,123 +12,95 @@
 
   /* ---------- ส่วนประกอบย่อย ---------- */
   function pageHero(eb, title, sub, back) {
-    return '<section class="page-hero"><div class="hero-bg"><div class="aurora"></div></div><div class="container">' +
+    return '<section class="page-hero"><div class="container">' +
       (back ? '<a class="back-link" href="' + back[0] + '">' + icon('arrow-left') + ' ' + esc(back[1]) + '</a><br>' : '') +
       '<span class="eyebrow">' + esc(eb) + '</span><h1>' + esc(title) + '</h1>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div></section>';
   }
   function empty(msg) { return '<div class="empty" style="grid-column:1/-1">' + icon('inbox') + '<p>' + esc(msg) + '</p></div>'; }
-  function thumb(id, img, ph) {
+  function thumb(img) {
     img = safeUrl(img);
-    return img ? '<img src="' + esc(img) + '" alt="" loading="lazy">' : '<div class="ph ' + toneOf(id) + '">' + icon(ph) + '</div>';
+    return img ? '<div class="thumb"><img src="' + esc(img) + '" alt="" loading="lazy" decoding="async"></div>' : '';
   }
   function newsCard(n, d) {
-    return '<a class="card reveal" style="--rd:' + (d || 0) + 's" href="#/news/' + encodeURIComponent(n.id) + '"><div class="thumb">' +
-      thumb(n.id, n.image, 'newspaper') + '<span class="tag">' + esc(n.category) + '</span></div><div class="card-b"><div class="meta"><span>' +
-      icon('calendar') + fmtDate(n.date) + '</span></div><h3>' + esc(n.title) + '</h3><p class="sum">' + esc(n.summary) + '</p></div></a>';
+    return '<a class="card reveal" style="--rd:' + (d || 0) + 's" href="#/news/' + encodeURIComponent(n.id) + '">' + thumb(n.image) +
+      '<div class="card-b"><div class="meta"><span class="tag">' + esc(n.category) + '</span><span>' + fmtDate(n.date, 1) + '</span></div><h3>' + esc(n.title) + '</h3><p class="sum">' + esc(n.summary) + '</p></div></a>';
   }
   function projectCard(p, d) {
     var st = TH.PROJECT_STATUS[p.status] || TH.PROJECT_STATUS.plan;
-    return '<a class="card reveal" style="--rd:' + (d || 0) + 's" href="#/projects/' + encodeURIComponent(p.id) + '"><div class="thumb">' +
-      thumb(p.id, p.image, 'layers') + '<span class="badge ' + st.cls + '">' + st.label + '</span></div><div class="card-b"><h3>' + esc(p.title) +
-      '</h3><p class="sum">' + esc(p.description) + '</p><div style="margin-top:auto;padding-top:.5rem"><div class="pr-row"><span>ความคืบหน้า</span><b>' +
-      p.progress + '%</b></div><div class="bar" style="--p:' + p.progress + '"><i></i></div></div></div></a>';
+    var facts = (p.location ? '<span>' + icon('pin') + ' ' + esc(p.location) + '</span>' : '') + (p.budget ? '<span>งบประมาณ ' + fmtNum(p.budget) + ' บาท</span>' : '');
+    return '<a class="card reveal" style="--rd:' + (d || 0) + 's" href="#/projects/' + encodeURIComponent(p.id) + '">' + thumb(p.image) +
+      '<div class="card-b"><div class="meta"><span class="badge ' + st.cls + '">' + st.label + '</span></div><h3>' + esc(p.title) + '</h3><p class="sum">' + esc(p.description) + '</p>' +
+      (facts ? '<div class="facts">' + facts + '</div>' : '') +
+      '<div style="margin-top:auto;padding-top:.6rem"><div class="pr-row"><span>ความคืบหน้า</span><b>' + p.progress + '%</b></div><div class="bar" style="--p:' + p.progress + '"><i></i></div></div></div></a>';
   }
   function searchBox(id, ph) {
     return '<label class="search">' + icon('search') + '<input type="search" id="' + id + '" placeholder="' + ph + '" aria-label="' + ph + '" autocomplete="off"></label>';
   }
   function chips(items, id) {
     return '<div class="filters" id="' + id + '">' + items.map(function (c, i) {
-      return '<button class="chip' + (i === 0 ? ' on' : '') + '" data-c="' + esc(c[0]) + '">' + esc(c[1]) + '</button>';
+      return '<button class="chip' + (i === 0 ? ' on' : '') + '" aria-pressed="' + (i === 0) + '" data-c="' + esc(c[0]) + '">' + esc(c[1]) + '</button>';
     }).join('') + '</div>';
   }
   function bindChips(id, draw) {
     $$('#' + id + ' .chip').forEach(function (b) {
       b.onclick = function () {
-        $$('#' + id + ' .chip').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on'); draw(b.getAttribute('data-c'));
+        $$('#' + id + ' .chip').forEach(function (x) { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
+        b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); draw(b.getAttribute('data-c'));
       };
     });
   }
 
-  /* ---------- สถิติสำหรับการ์ดบนฮีโร่ ---------- */
-  function stats() {
-    var P = S.projects, R = S.reportStats, now = new Date(), pts = [], i;
-    var avg = P.length ? Math.round(P.reduce(function (a, p) { return a + p.progress; }, 0) / P.length) : 0;
-    for (i = 5; i >= 0; i--) {
-      var end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      pts.push(R.filter(function (r) { return r.status === 'done' && new Date(r.updatedAt) < end; }).length);
-    }
-    return {
-      avg: avg, total: P.length, doing: P.filter(function (p) { return p.status === 'doing'; }).length,
-      doneR: R.filter(function (r) { return r.status === 'done'; }).length, totalR: R.length, pts: pts
-    };
-  }
-  function spark(pts) {
-    var max = Math.max.apply(null, pts.concat(1)), w = 300, h = 76, xs = [], ys = [], d, i;
-    pts.forEach(function (v, k) { xs.push(6 + k * (w - 12) / (pts.length - 1)); ys.push(h - 8 - (v / max) * (h - 22)); });
-    d = 'M' + xs[0] + ',' + ys[0];
-    for (i = 1; i < pts.length; i++) { var cx = (xs[i - 1] + xs[i]) / 2; d += ' C' + cx + ',' + ys[i - 1] + ' ' + cx + ',' + ys[i] + ' ' + xs[i] + ',' + ys[i]; }
-    return { line: d, area: d + ' L' + xs[xs.length - 1] + ',' + h + ' L' + xs[0] + ',' + h + 'Z' };
-  }
-  function sky() {
-    var s = '', i;
-    for (i = 0; i < 26; i++) s += '<span style="left:' + (Math.random() * 100).toFixed(1) + '%;top:' + (Math.random() * 55).toFixed(1) + '%;animation-delay:' + (Math.random() * 4).toFixed(1) + 's"></span>';
-    var f = '';
-    for (i = 0; i < 12; i++) f += '<span style="left:' + (Math.random() * 100).toFixed(1) + '%;bottom:' + (6 + Math.random() * 34).toFixed(1) + '%;animation-delay:' + (Math.random() * 9).toFixed(1) + 's;animation-duration:' + (7 + Math.random() * 6).toFixed(1) + 's"></span>';
-    return '<div class="stars">' + s + '</div><div class="fireflies">' + f + '</div>';
-  }
-
   /* ---------- หน้าแรก ---------- */
+  function stats() {
+    var P = S.projects, R = S.reportStats;
+    return { doneR: R.filter(function (r) { return r.status === 'done'; }).length, totalR: R.length, total: P.length };
+  }
   function homeView() {
-    var st = stats(), sp = spark(st.pts), photo = safeUrl(set('heroImage'));
+    var st = stats(), photo = safeUrl(set('heroImage'));
     var lines = String(set('heroTitle', 'ชุมชนเข้มแข็ง|เริ่มต้นที่เราทุกคน')).split('|');
-    var title = lines.map(function (l, i) {
-      return '<span class="line"><span class="line-in' + (i ? ' grad' : '') + '" style="--d:' + (0.15 + i * 0.14) + 's">' + esc(l) + '</span></span>';
-    }).join('');
+    var title = lines.map(function (l) { return '<span class="line">' + esc(l) + '</span>'; }).join('');
     var feat = S.projects.slice().sort(function (a, b) { return (a.status === 'doing' ? 0 : 1) - (b.status === 'doing' ? 0 : 1); }).slice(0, 3);
     var svc = [
-      ['newspaper', 'ข่าวและกิจกรรม', 'ประกาศและกิจกรรมล่าสุดของชุมชน', '#/news'],
-      ['layers', 'โครงการพัฒนา', 'ดูความคืบหน้าและงบประมาณของแต่ละโครงการ', '#/projects'],
-      ['megaphone', 'แจ้งปัญหา', 'ถนนชำรุด ไฟดับ ขยะ น้ำท่วม แจ้งได้ทันที', '#/report'],
-      ['search', 'ติดตามสถานะ', 'ใส่เลขติดตามเพื่อดูความคืบหน้าเรื่องที่แจ้ง', '#/track']
+      ['01', 'แจ้งปัญหา', 'ถนนชำรุด ไฟดับ ขยะ น้ำท่วม แจ้งได้ทันที', '#/report', 1],
+      ['02', 'ติดตามสถานะ', 'ใส่เลขติดตามเพื่อดูความคืบหน้าเรื่องที่แจ้ง', '#/track'],
+      ['03', 'ข่าวและกิจกรรม', 'ประกาศและกิจกรรมล่าสุดของชุมชน', '#/news'],
+      ['04', 'โครงการพัฒนา', 'ความคืบหน้าและงบประมาณของแต่ละโครงการ', '#/projects']
     ];
-    var html = '<section class="hero"><div class="hero-bg">' + (photo ? '<div class="hero-photo" style="background-image:url(\'' + esc(photo) + '\')"></div>' : '') +
-      '<div class="aurora"></div>' + sky() +
-      '<svg class="mtn mtn-1" viewBox="0 0 1440 360" preserveAspectRatio="xMidYMax slice"><path fill="rgba(23,165,143,.22)" d="M0 220 120 150 230 200 360 110 480 190 610 130 740 205 880 120 1010 195 1150 140 1290 205 1440 160V360H0Z"/></svg>' +
-      '<svg class="mtn mtn-2" viewBox="0 0 1440 360" preserveAspectRatio="xMidYMax slice"><path fill="rgba(10,58,51,.88)" d="M0 270 140 200 260 250 400 170 540 255 690 190 830 262 980 185 1120 255 1270 200 1440 250V360H0Z"/></svg>' +
-      '<svg class="mtn mtn-3" viewBox="0 0 1440 360" preserveAspectRatio="xMidYMax slice"><path fill="#052520" d="M0 322C200 292 320 332 520 306 760 274 900 332 1120 302 1280 282 1380 312 1440 298V360H0Z"/></svg></div>' +
-      '<div class="container hero-grid"><div><span class="eyebrow fade-up">' + esc(set('heroEyebrow', 'เว็บไซต์พัฒนาชุมชน')) + '</span><h1>' + title + '</h1>' +
-      '<p class="hero-sub fade-up" style="--d:.5s">' + esc(set('heroSubtitle')) + '</p>' +
-      '<div class="hero-cta fade-up" style="--d:.65s"><a class="btn btn-primary" href="#/report">แจ้งปัญหาในชุมชน ' + icon('arrow-right') + '</a><a class="btn btn-ghost" href="#/projects">ดูโครงการพัฒนา</a></div>' +
-      '<div class="chips fade-up" style="--d:.8s"><span>' + icon('shield') + 'โปร่งใส ตรวจสอบได้</span><span>' + icon('search') + 'ทุกเรื่องมีเลขติดตาม</span><span>' + icon('users') + 'ทุกคนมีส่วนร่วม</span></div></div>' +
-      '<div class="fade-up" style="--d:.55s"><div class="glass hero-card" data-io><div class="hc-top"><span>สรุปภาพรวมโครงการ</span><span class="hc-pill">' + st.total + ' โครงการ</span></div>' +
-      '<div class="hc-main"><svg class="ring" viewBox="0 0 120 120" style="--v:' + st.avg + '"><circle class="bg" cx="60" cy="60" r="50" pathLength="100"/><circle class="fg" cx="60" cy="60" r="50" pathLength="100"/></svg>' +
-      '<div><div class="hc-big" data-count="' + st.avg + '" data-suffix="%">0%</div><div class="hc-cap">ความคืบหน้าเฉลี่ยของโครงการ</div></div></div>' +
-      '<svg class="spark" viewBox="0 0 300 76" preserveAspectRatio="none"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ff0d4" stop-opacity=".4"/><stop offset="1" stop-color="#8ff0d4" stop-opacity="0"/></linearGradient></defs><path class="ar" d="' + sp.area + '"/><path class="ln" pathLength="1" d="' + sp.line + '"/></svg>' +
-      '<div class="hc-cap">เรื่องแจ้งที่แก้ไขแล้ว (สะสม 6 เดือน)</div><div class="hc-tiles">' +
-      '<div class="hc-tile">' + icon('layers') + '<div><b data-count="' + st.doing + '">0</b></div><small>กำลังดำเนินการ</small></div>' +
-      '<div class="hc-tile">' + icon('check') + '<div><b data-count="' + st.doneR + '">0</b></div><small>เรื่องที่แก้แล้ว</small></div>' +
-      '<div class="hc-tile">' + icon('megaphone') + '<div><b data-count="' + st.totalR + '">0</b></div><small>เรื่องแจ้งทั้งหมด</small></div></div></div></div></div><div class="scroll-hint"></div></section>' +
+    /* ตัวเลขชุมชน: แสดงเฉพาะค่าที่มีจริง ไม่แสดงศูนย์หรือค่าสมมติ */
+    var fig = [];
+    [['population', 'ประชากร (คน)'], ['households', 'ครัวเรือน'], ['groups', 'กลุ่ม/ชมรมในชุมชน']].forEach(function (x) { var v = Number(set(x[0])) || 0; if (v > 0) fig.push([v, x[1]]); });
+    if (st.total > 0) fig.push([st.total, 'โครงการพัฒนา']);
+    if (st.totalR > 0) fig.push([st.doneR, 'เรื่องแจ้งที่แก้ไขแล้ว (จากทั้งหมด ' + fmtNum(st.totalR) + ' เรื่อง)']);
+    var aboutImg = safeUrl(set('aboutImage'));
+    var head = function (eb, h, link, href) {
+      return '<div class="sec-head reveal"><div><span class="eyebrow">' + eb + '</span><h2>' + h + '</h2></div>' + (link ? '<a class="btn btn-outline btn-sm" href="' + href + '">' + link + ' ' + icon('arrow-right') + '</a>' : '') + '</div>';
+    };
+    var html = '<section class="hero">' + (photo ? '<div class="hero-photo" style="background-image:url(\'' + esc(photo) + '\')"></div>' : '') +
+      '<div class="container hero-grid"><div><span class="eyebrow">' + esc(set('heroEyebrow', 'เว็บไซต์พัฒนาชุมชน')) + '</span><h1>' + title + '</h1>' +
+      (set('heroSubtitle') ? '<p class="hero-sub">' + esc(set('heroSubtitle')) + '</p>' : '') +
+      '<div class="hero-cta"><a class="btn btn-accent" href="#/report">แจ้งปัญหาในชุมชน ' + icon('arrow-right') + '</a><a class="btn btn-ghost" href="#/track">ติดตามสถานะ</a></div>' +
+      '<p class="hero-note">' + icon('shield') + '<span>ทุกเรื่องที่แจ้งจะได้รับเลขติดตาม ชื่อและเบอร์โทรของผู้แจ้งเห็นได้เฉพาะเจ้าหน้าที่</span></p></div>' +
+      '<nav class="qs-panel" aria-label="บริการที่ใช้บ่อย"><div class="qs-head">บริการที่ใช้บ่อย</div>' + svc.map(function (x) {
+        return '<a class="qs' + (x[4] ? ' main' : '') + '" href="' + x[3] + '"><span class="qs-n">' + x[0] + '</span><span><b>' + x[1] + '</b><small>' + x[2] + '</small></span>' + icon('arrow-right') + '</a>';
+      }).join('') + '</nav></div></section>' +
 
-      '<section class="section"><div class="container"><div class="grid g4">' + svc.map(function (s, i) {
-        return '<a class="svc reveal" style="--rd:' + i * 0.08 + 's" href="' + s[3] + '"><span class="svc-ic">' + icon(s[0]) + '</span><h3>' + s[1] + '</h3><p>' + s[2] + '</p><span class="go">เปิดดู ' + icon('arrow-right') + '</span></a>';
-      }).join('') + '</div></div></section>' +
+      (fig.length ? '<section class="section"><div class="container">' + head('ชุมชนในตัวเลข', 'ข้อมูลชุมชนโดยสรุป') + '<div class="figures">' + fig.map(function (x) {
+        return '<div class="fig"><b>' + fmtNum(x[0]) + '</b><span>' + esc(x[1]) + '</span></div>';
+      }).join('') + '</div></div></section>' : '') +
 
-      '<section class="section"><div class="container"><div class="sec-head reveal"><div><span class="eyebrow">โครงการพัฒนา</span><h2>สิ่งที่เรากำลังทำเพื่อชุมชน</h2></div><a class="btn btn-outline btn-sm" href="#/projects">ดูทั้งหมด ' + icon('arrow-right') + '</a></div><div class="grid g3">' +
-      (feat.length ? feat.map(function (p, i) { return projectCard(p, i * 0.1); }).join('') : empty('ยังไม่มีโครงการ')) + '</div></div></section>' +
+      '<section class="section"><div class="container">' + head('โครงการพัฒนา', 'สิ่งที่เรากำลังทำเพื่อชุมชน', 'ดูทั้งหมด', '#/projects') + '<div class="grid g3">' +
+      (feat.length ? feat.map(function (p, i) { return projectCard(p, i * 0.08); }).join('') : empty('ยังไม่มีโครงการ')) + '</div></div></section>' +
 
-      '<section class="section"><div class="container"><div class="sec-head reveal"><div><span class="eyebrow">ข่าวและกิจกรรม</span><h2>ข่าวสารล่าสุด</h2></div><a class="btn btn-outline btn-sm" href="#/news">ดูทั้งหมด ' + icon('arrow-right') + '</a></div><div class="grid g3">' +
-      (S.news.length ? S.news.slice(0, 3).map(function (n, i) { return newsCard(n, i * 0.1); }).join('') : empty('ยังไม่มีข่าว')) + '</div></div></section>' +
+      '<section class="section"><div class="container">' + head('ข่าวและกิจกรรม', 'ข่าวสารล่าสุด', 'ดูทั้งหมด', '#/news') + '<div class="grid g3">' +
+      (S.news.length ? S.news.slice(0, 3).map(function (n, i) { return newsCard(n, i * 0.08); }).join('') : empty('ยังไม่มีข่าว')) + '</div></div></section>' +
 
-      (S.gallery.length ? '<section class="section"><div class="container"><div class="sec-head reveal"><div><span class="eyebrow">แกลเลอรี่</span><h2>ภาพกิจกรรมล่าสุด</h2></div><a class="btn btn-outline btn-sm" href="#/gallery">ดูทั้งหมด ' + icon('arrow-right') + '</a></div><div class="gallery">' + galleryGrid(S.gallery.slice(0, 6)) + '</div></div></section>' : '') +
-      '<section class="section"><div class="container"><div class="cta reveal"><div><h2>แจ้งปัญหาแล้ว อยากรู้ว่าไปถึงไหน?</h2><p>กรอกเลขติดตามที่ได้ตอนแจ้งเรื่อง เพื่อดูสถานะล่าสุดได้ทันที</p></div>' +
-      '<form class="trk" id="homeTrk"><input id="homeCode" placeholder="เช่น RP-261106-AB12" aria-label="เลขติดตามเรื่อง" autocomplete="off"><button class="btn btn-primary" type="submit">ตรวจสอบ ' + icon('arrow-right') + '</button></form></div></div></section>' +
+      (S.gallery.length ? '<section class="section"><div class="container">' + head('แกลเลอรี่', 'ภาพกิจกรรมล่าสุด', 'ดูทั้งหมด', '#/gallery') + '<div class="gallery">' + galleryGrid(S.gallery.slice(0, 6)) + '</div></div></section>' : '') +
 
-      '<section class="section"><div class="container about"><div class="about-text reveal"><span class="eyebrow" style="color:var(--teal)">เกี่ยวกับเรา</span><h2 style="font-size:clamp(1.7rem,3.6vw,2.5rem);line-height:1.3;margin-top:.3rem">' + esc(set('aboutTitle', 'เกี่ยวกับชุมชนของเรา')) + '</h2>' + paragraphs(set('aboutText')) + '<a class="btn btn-dark" href="#/about" style="margin-top:1rem">อ่านเพิ่มเติม</a></div>' +
-      '<div class="stats">' + [['users', 'population', 'ประชากร (คน)'], ['home', 'households', 'ครัวเรือน'], ['sprout', 'groups', 'กลุ่ม/ชมรมในชุมชน'], ['layers', null, 'โครงการทั้งหมด']].map(function (x, i) {
-        var v = x[1] ? Number(set(x[1], 0)) || 0 : S.projects.length;
-        return '<div class="stat reveal" style="--rd:' + i * 0.08 + 's">' + icon(x[0]) + '<b data-count="' + v + '">0</b><span>' + x[2] + '</span></div>';
-      }).join('') + '</div></div></section>';
+      '<section class="section"><div class="container"><div class="cta reveal"><div><h2>แจ้งปัญหาแล้ว อยากรู้ว่าไปถึงไหน?</h2><p>กรอกเลขติดตามที่ได้ตอนแจ้งเรื่อง เพื่อดูสถานะล่าสุด</p></div>' +
+      '<form class="trk" id="homeTrk"><input id="homeCode" placeholder="เช่น RP-261106-AB12" aria-label="เลขติดตามเรื่อง" autocomplete="off"><button class="btn btn-dark" type="submit">ตรวจสอบ ' + icon('arrow-right') + '</button></form></div></div></section>' +
+
+      (set('aboutText') ? '<section class="section"><div class="container"><div class="about' + (aboutImg ? '' : ' solo') + '"><div class="about-text reveal"><span class="eyebrow">เกี่ยวกับเรา</span><h2>' + esc(set('aboutTitle', 'เกี่ยวกับชุมชนของเรา')) + '</h2>' + paragraphs(set('aboutText')) + '<a class="btn btn-outline" href="#/about">อ่านเพิ่มเติม ' + icon('arrow-right') + '</a></div>' +
+        (aboutImg ? '<img class="ab-img reveal" src="' + esc(aboutImg) + '" alt="" loading="lazy" decoding="async">' : '') + '</div></div></section>' : '');
 
     return {
       title: 'หน้าแรก', html: html, after: function () {
@@ -406,14 +378,8 @@
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
     els.forEach(function (el) { io.observe(el); });
   }
-  function moveInd() {
-    var a = $('.nav-links a.active'), ind = $('.nav-ind');
-    if (!a) { ind.style.width = '0'; return; }
-    ind.style.left = (a.offsetLeft + 16) + 'px'; ind.style.width = (a.offsetWidth - 32) + 'px';
-  }
   function setActive(p) {
-    $$('.nav-links a, .mmenu a').forEach(function (a) { a.classList.toggle('active', a.getAttribute('data-p') === p); });
-    moveInd();
+    $$('.nav-links a, .mmenu a').forEach(function (a) { var on = a.getAttribute('data-p') === p; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   }
 
   /* ---------- ระบบเปลี่ยนหน้า ---------- */
@@ -436,7 +402,7 @@
       document.title = (page === 'home' ? set('siteName', 'เว็บไซต์พัฒนาชุมชน') : r.title + ' | ' + set('siteName', 'ชุมชน'));
       view.innerHTML = r.html;
       view.classList.remove('leaving'); view.classList.remove('entering'); void view.offsetWidth; view.classList.add('entering');
-      window.scrollTo(0, 0); setActive(page); $('#nav').classList.remove('hide');
+      window.scrollTo(0, 0); setActive(page); document.body.classList.toggle('no-dock', page === 'report');
       try { if (r.after) r.after(); } catch (e2) { if (window.console) console.error(e2); }
       observe();
     });
@@ -449,30 +415,18 @@
     var tel = set('phone'), line = safeUrl(set('lineUrl')), fb = safeUrl(set('facebookUrl'));
     $('#footer').innerHTML = '<div class="container"><div class="f-grid"><div><div class="brand"><span class="brand-mark">' + icon('sprout') + '</span><b style="max-width:none">' + esc(name) + '</b></div><p>' + esc(set('siteTagline')) + '</p>' +
       '<div class="social">' + (fb ? '<a href="' + esc(fb) + '" target="_blank" rel="noopener" aria-label="Facebook">' + icon('facebook') + '</a>' : '') + (line ? '<a href="' + esc(line) + '" target="_blank" rel="noopener" aria-label="LINE">' + icon('chat') + '</a>' : '') + '</div></div>' +
-      '<div><h4>เมนู</h4><a href="#/news">ข่าวและกิจกรรม</a><a href="#/projects">โครงการพัฒนา</a><a href="#/gallery">แกลเลอรี่</a><a href="#/report">แจ้งปัญหา</a><a href="#/track">ติดตามสถานะ</a></div>' +
-      '<div><h4>ติดต่อ</h4><p>' + esc(tel) + '</p><p>' + esc(set('email')) + '</p><p>' + esc(set('officeHours')) + '</p></div></div>' +
+      '<div><h4>เมนู</h4><a href="#/report">แจ้งปัญหา</a><a href="#/track">ติดตามสถานะ</a><a href="#/news">ข่าวและกิจกรรม</a><a href="#/projects">โครงการพัฒนา</a><a href="#/gallery">แกลเลอรี่</a><a href="#/about">เกี่ยวกับชุมชน</a><a href="#/contact">ติดต่อ</a></div>' +
+      '<div><h4>ติดต่อ</h4>' + (tel ? '<p>' + esc(tel) + '</p>' : '') + (set('email') ? '<p>' + esc(set('email')) + '</p>' : '') + (set('officeHours') ? '<p>' + esc(set('officeHours')) + '</p>' : '') + (set('address') ? '<p>' + esc(set('address')) + '</p>' : '') + '</div></div>' +
       '<div class="f-bottom"><span>© ' + (new Date().getFullYear() + 543) + ' ' + esc(name) + '</span><a href="admin.html">สำหรับผู้ดูแลระบบ</a></div></div>';
   }
   function initShell() {
     $('#brandMark').innerHTML = icon('sprout'); $('#ctaIc').innerHTML = icon('megaphone');
-    var links = [['home', '#/', 'home', 'หน้าแรก'], ['news', '#/news', 'newspaper', 'ข่าวและกิจกรรม'], ['projects', '#/projects', 'layers', 'โครงการพัฒนา'], ['gallery', '#/gallery', 'image', 'แกลเลอรี่'], ['about', '#/about', 'users', 'เกี่ยวกับชุมชน'], ['report', '#/report', 'megaphone', 'แจ้งปัญหา'], ['track', '#/track', 'search', 'ติดตามสถานะ'], ['contact', '#/contact', 'phone', 'ติดต่อ']];
-    $('#mmenu').innerHTML = links.map(function (l, i) { return '<a href="' + l[1] + '" data-p="' + l[0] + '" style="--i:' + i + '">' + icon(l[2]) + l[3] + '</a>'; }).join('');
+    var links = [['home', '#/', 'home', 'หน้าแรก'], ['report', '#/report', 'megaphone', 'แจ้งปัญหา'], ['track', '#/track', 'search', 'ติดตามสถานะ'], ['news', '#/news', 'newspaper', 'ข่าวและกิจกรรม'], ['projects', '#/projects', 'layers', 'โครงการพัฒนา'], ['gallery', '#/gallery', 'image', 'แกลเลอรี่'], ['about', '#/about', 'users', 'เกี่ยวกับชุมชน'], ['contact', '#/contact', 'phone', 'ติดต่อ']];
+    $('#mmenu').innerHTML = links.map(function (l) { return '<a href="' + l[1] + '" data-p="' + l[0] + '">' + icon(l[2]) + l[3] + '</a>'; }).join('');
     $('#burger').onclick = function () {
-      var o = document.body.classList.toggle('menu-open'); this.setAttribute('aria-expanded', o); $('#mmenu').setAttribute('aria-hidden', !o);
+      var o = document.body.classList.toggle('menu-open'); this.setAttribute('aria-expanded', o); this.setAttribute('aria-label', o ? 'ปิดเมนู' : 'เปิดเมนู'); $('#mmenu').setAttribute('aria-hidden', !o);
     };
-    var last = 0, tick = false, nav = $('#nav'), bar = $('#progress');
-    window.addEventListener('scroll', function () {
-      if (tick) return; tick = true;
-      requestAnimationFrame(function () {
-        var y = window.scrollY, hero = $('.hero'), max = document.documentElement.scrollHeight - innerHeight;
-        nav.classList.toggle('scrolled', y > 40);
-        if (y < 400 || y < last - 4) nav.classList.remove('hide'); else if (y > last + 4 && !document.body.classList.contains('menu-open')) nav.classList.add('hide');
-        if (hero && y < innerHeight * 1.3) hero.style.setProperty('--sy', y);
-        bar.style.width = (max > 0 ? y / max * 100 : 0) + '%'; last = y; tick = false;
-      });
-    }, { passive: true });
-    window.addEventListener('resize', moveInd);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInd);
+    $('.skip').onclick = function (e) { e.preventDefault(); view.setAttribute('tabindex', '-1'); view.focus(); };
     window.addEventListener('hashchange', route);
   }
   function loading(msg, err) {
@@ -481,7 +435,7 @@
     if (err) $('#retry').onclick = boot;
   }
   function apply(d) {
-    S.settings = d.settings || {}; S.news = d.news || []; S.gallery = d.gallery || []; S.reportStats = d.reportStats || [];
+    S.settings = d.settings || {}; S.news = d.news || []; S.gallery = (d.gallery || []).filter(function (g) { return safeUrl(g.image); }); S.reportStats = d.reportStats || [];
     S.projects = (d.projects || []).map(function (p) { return Object.assign({}, p, { progress: Math.max(0, Math.min(100, Number(p.progress) || 0)), budget: Number(p.budget) || 0 }); });
   }
   var KEY = 'cw_pub_cache_v1', lastRaw = '';

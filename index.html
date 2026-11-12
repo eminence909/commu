@@ -6,16 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>เว็บไซต์พัฒนาชุมชน</title>
   <meta name="description" content="ข่าวสาร โครงการพัฒนา และระบบแจ้งปัญหาของชุมชน ติดตามสถานะได้ทุกเรื่อง">
-  <meta name="theme-color" content="#06231f">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='28' fill='%2317a58f'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#123B32">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='28' fill='%23123B32'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://script.google.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261107j">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=20261113a">
 </head>
 <body>
-  <div id="progress"></div>
+  <a class="skip" href="#view">ข้ามไปเนื้อหาหลัก</a>
 
   <header class="nav" id="nav">
     <div class="container">
@@ -32,7 +32,6 @@
           <a href="#/track" data-p="track">ติดตามสถานะ</a>
           <a href="#/about" data-p="about">เกี่ยวกับ</a>
           <a href="#/contact" data-p="contact">ติดต่อ</a>
-          <span class="nav-ind"></span>
         </nav>
         <div class="nav-right">
           <a class="btn btn-primary btn-sm nav-cta" href="#/report">แจ้งปัญหา <span id="ctaIc"></span></a>
@@ -48,10 +47,12 @@
 
   <footer class="footer" id="footer"></footer>
 
-  <script src="js/config.js?v=20261107j"></script>
-  <script src="js/data.js?v=20261107j"></script>
-  <script src="js/common.js?v=20261107j"></script>
-  <script src="js/api.js?v=20261107j"></script>
-  <script src="js/app.js?v=20261107j"></script>
+  <div class="dock" id="dock"><a class="btn btn-primary" href="#/report">แจ้งปัญหา</a><a class="btn btn-outline" href="#/track">ติดตามสถานะ</a></div>
+
+  <script src="js/config.js?v=20261113a"></script>
+  <script src="js/data.js?v=20261113a"></script>
+  <script src="js/common.js?v=20261113a"></script>
+  <script src="js/api.js?v=20261113a"></script>
+  <script src="js/app.js?v=20261113a"></script>
 </body>
 </html>

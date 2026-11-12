@@ -70,9 +70,9 @@
 
   /* ---------- เข้าสู่ระบบ ---------- */
   function loginView() {
-    app.innerHTML = '<div class="login"><div class="hero-bg"><div class="aurora"></div></div><div class="glass"><span class="brand-mark" style="width:52px;height:52px;border-radius:17px;font-size:1.5rem">' + icon('lock') + '</span><h1>ระบบแอดมิน</h1><p>เข้าสู่ระบบเพื่อจัดการเนื้อหาของเว็บไซต์</p>' +
+    app.innerHTML = '<div class="login"><div class="login-card"><span class="brand-mark">' + icon('lock') + '</span><h1>ระบบแอดมิน</h1><p>เข้าสู่ระบบเพื่อจัดการเนื้อหาของเว็บไซต์</p>' +
       '<form id="lf"><div class="field"><label for="pw">รหัสผ่านผู้ดูแล</label><input type="password" id="pw" autocomplete="current-password" autofocus></div><button class="btn btn-primary" type="submit">เข้าสู่ระบบ ' + icon('arrow-right') + '</button></form>' +
-      (API.demo ? '<div class="hint">โหมดสาธิต: รหัสผ่านคือ <b>' + esc(window.SITE_CONFIG.DEMO_PASSWORD) + '</b></div>' : '') + '<p style="margin-top:1rem"><a href="index.html" style="color:var(--mint)">← กลับหน้าเว็บไซต์</a></p></div></div>';
+      (API.demo ? '<div class="hint">โหมดสาธิต: รหัสผ่านคือ <b>' + esc(window.SITE_CONFIG.DEMO_PASSWORD) + '</b></div>' : '') + '<p style="margin-top:1rem"><a href="index.html">← กลับหน้าเว็บไซต์</a></p></div></div>';
     $('#lf').onsubmit = function (e) {
       e.preventDefault();
       var b = $('#lf button'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังตรวจสอบ...';
