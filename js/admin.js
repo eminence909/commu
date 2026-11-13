@@ -12,14 +12,35 @@
 
   /* ---------- หน้าต่างป๊อปอัพ ---------- */
   function modal(title, body, cls, mount) {
-    var m = document.createElement('div');
+    var m = document.createElement('div'), opener = document.activeElement;
     m.className = 'mask';
-    m.innerHTML = '<div class="modal ' + (cls || '') + '" role="dialog" aria-modal="true"><div class="m-head"><h2>' + esc(title) + '</h2><button class="ib" aria-label="ปิด">' + icon('x') + '</button></div><div class="m-body">' + body + '</div></div>';
+    m.innerHTML = '<div class="modal ' + (cls || '') + '" role="dialog" aria-modal="true" aria-labelledby="m-title" tabindex="-1"><div class="m-head"><h2 id="m-title">' + esc(title) + '</h2><button class="ib" aria-label="ปิดหน้าต่าง">' + icon('x') + '</button></div><div class="m-body">' + body + '</div></div>';
     document.body.appendChild(m);
-    var close = function () { m.classList.add('out'); setTimeout(function () { m.remove(); }, 220); };
+    var box = m.querySelector('.modal');
+    var closed = false;
+    var close = function () {
+      if (closed) return; closed = true;
+      document.removeEventListener('keydown', key);
+      m.classList.add('out'); setTimeout(function () { m.remove(); }, 220);
+      if (opener && opener.focus && document.contains(opener)) opener.focus();
+    };
+    function key(e) {
+      var all = document.querySelectorAll('.mask:not(.out)');
+      if (all[all.length - 1] !== m) return; /* ตอบสนองเฉพาะหน้าต่างบนสุด */
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      else if (e.key === 'Tab') {
+        var f = Array.prototype.slice.call(box.querySelectorAll('button:not([disabled]),a[href],input:not([type=hidden]):not([disabled]),select,textarea,[tabindex="0"]')).filter(function (x) { return x.offsetParent !== null; });
+        if (!f.length) return;
+        var a = document.activeElement;
+        if (e.shiftKey && (a === f[0] || a === box)) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && a === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+      }
+    }
+    document.addEventListener('keydown', key);
     m.querySelector('.ib').onclick = close;
     m.addEventListener('mousedown', function (e) { if (e.target === m) close(); });
     if (mount) mount(m, close);
+    box.focus();
     return close;
   }
   function confirmBox(msg, ok) {
@@ -111,6 +132,14 @@
     v.after && v.after();
     requestAnimationFrame(function () { $$('.bar', mn).forEach(function (b) { b.classList.add('in'); }); $$('[data-count]', mn).forEach(countUp); });
   }
+  function bindRows() {
+    $$('tr[data-r]').forEach(function (t) {
+      var open = function () { reportModal(t.getAttribute('data-r')); };
+      t.setAttribute('tabindex', '0');
+      t.onclick = open;
+      t.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+    });
+  }
   function status(map, s) { var x = map[s] || { label: s, cls: 's-new' }; return '<span class="badge ' + x.cls + '">' + x.label + '</span>'; }
 
   /* ---------- ภาพรวม ---------- */
@@ -123,7 +152,7 @@
       html: head('ภาพรวม', 'สรุปสถานะล่าสุดของเว็บไซต์') + '<div class="kpis">' + kp.map(function (k) { return '<div class="kpi">' + icon(k[0]) + '<b data-count="' + k[1] + '">0</b><span>' + k[2] + '</span></div>'; }).join('') + '</div>' +
         '<div class="cols"><div class="box"><h3>เรื่องแจ้งแยกตามประเภท</h3>' + (ks.length ? ks.map(function (k) { return '<div class="hbar"><span>' + esc(k) + '</span><div class="bar" style="--p:' + Math.round(cats[k] / mx * 100) + '"><i></i></div><b>' + cats[k] + '</b></div>'; }).join('') : '<p style="color:var(--muted)">ยังไม่มีเรื่องแจ้ง</p>') + '</div>' +
         '<div class="box"><h3>เรื่องแจ้งล่าสุด</h3>' + (R.length ? '<table class="tbl"><tbody>' + R.slice(0, 5).map(function (r) { return '<tr class="click" data-r="' + esc(r.code) + '"><td><div class="t-main">' + esc(r.category) + '</div><div class="t-sub">' + esc(r.detail) + '</div></td><td>' + status(TH.REPORT_STATUS, r.status) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p style="color:var(--muted)">ยังไม่มีเรื่องแจ้ง</p>') + '</div></div>',
-      after: function () { $$('[data-r]').forEach(function (t) { t.onclick = function () { reportModal(t.getAttribute('data-r')); }; }); }
+      after: bindRows
     };
   }
 
@@ -133,14 +162,21 @@
     var f = [['all', 'ทั้งหมด']].concat(stOpts(TH.REPORT_STATUS));
     return {
       html: head('เรื่องแจ้งปัญหา', 'คลิกที่แถวเพื่อดูรายละเอียดและเปลี่ยนสถานะ', '<button class="btn btn-outline btn-sm" id="csv">' + icon('download') + ' ส่งออก CSV</button>') +
-        '<div class="toolbar"><div class="filters">' + f.map(function (x) { return '<button class="chip' + (rf.st === x[0] ? ' on' : '') + '" data-s="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div><input type="search" id="rq" placeholder="ค้นหา..." value="' + esc(rf.q) + '"></div><div class="box" style="margin-top:0;padding:.6rem">' +
+        '<div class="toolbar"><div class="filters">' + f.map(function (x) { return '<button class="chip' + (rf.st === x[0] ? ' on' : '') + '" aria-pressed="' + (rf.st === x[0]) + '" data-s="' + x[0] + '">' + x[1] + ' (' + A.reports.filter(function (r) { return x[0] === 'all' || r.status === x[0]; }).length + ')</button>'; }).join('') + '</div><input type="search" id="rq" placeholder="ค้นหาเลขติดตาม ชื่อ เรื่อง..." aria-label="ค้นหาเรื่องแจ้ง" value="' + esc(rf.q) + '"></div><p class="count" id="rc" role="status" aria-live="polite">แสดง ' + list.length + ' จาก ' + A.reports.length + ' เรื่อง</p><div class="box" style="margin-top:0;padding:.6rem">' +
         (list.length ? '<table class="tbl"><thead><tr><th>เลขติดตาม</th><th>วันที่แจ้ง</th><th>เรื่อง</th><th>สถานะ</th></tr></thead><tbody>' + list.map(function (r) {
           return '<tr class="click" data-r="' + esc(r.code) + '"><td data-l="เลขติดตาม"><b class="code">' + esc(r.code) + '</b></td><td data-l="วันที่แจ้ง">' + fmtDate(r.createdAt, 1) + '</td><td data-l="เรื่อง"><div class="t-main">' + esc(r.category) + '</div><div class="t-sub">' + esc(r.detail) + '</div></td><td>' + status(TH.REPORT_STATUS, r.status) + '</td></tr>';
         }).join('') + '</tbody></table>' : '<div class="empty" style="border:0">' + icon('inbox') + '<p>ไม่พบเรื่องแจ้ง</p></div>') + '</div>',
       after: function () {
         $$('[data-s]').forEach(function (b) { b.onclick = function () { rf.st = b.getAttribute('data-s'); render(); }; });
-        $('#rq').onchange = function () { rf.q = this.value.trim(); render(); };
-        $$('[data-r]').forEach(function (t) { t.onclick = function () { reportModal(t.getAttribute('data-r')); }; });
+        var rq = $('#rq'), tm;
+        rq.oninput = function () {
+          clearTimeout(tm);
+          tm = setTimeout(function () {
+            rf.q = rq.value.trim(); render();
+            var n = $('#rq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); /* วาดหน้าใหม่แล้วคืนโฟกัสให้ช่องค้นหา */
+          }, 250);
+        };
+        bindRows();
         $('#csv').onclick = exportCsv;
       }
     };
@@ -343,7 +379,7 @@
   function settings() {
     var F = [{ sec: 'ชื่อและคำโปรย' }, { k: 'siteName', l: 'ชื่อเว็บ / ชื่อชุมชน' }, { k: 'siteTagline', l: 'คำโปรยท้ายเว็บ' }, { sec: 'หน้าแรก (ส่วนบนสุด)' }, { k: 'heroEyebrow', l: 'ข้อความเล็กเหนือหัวข้อ' }, { k: 'heroTitle', l: 'หัวข้อใหญ่', full: 1, s: 'ใช้เครื่องหมาย | เพื่อขึ้นบรรทัดใหม่ เช่น ชุมชนเข้มแข็ง|เริ่มต้นที่เราทุกคน' },
       { k: 'heroSubtitle', l: 'คำอธิบายใต้หัวข้อ', t: 'textarea', h: 80 }, { k: 'heroImage', l: 'รูปพื้นหลังหน้าแรก (ไม่บังคับ)', t: 'image' }, { sec: 'เกี่ยวกับชุมชน' }, { k: 'aboutTitle', l: 'หัวข้อ', full: 1 }, { k: 'aboutText', l: 'ข้อความแนะนำชุมชน', t: 'textarea', h: 130 },
-      { k: 'aboutImage', l: 'รูปประกอบหน้าเกี่ยวกับชุมชน (ไม่บังคับ)', t: 'image' }, { k: 'vision', l: 'วิสัยทัศน์', t: 'textarea', h: 80 }, { k: 'mission', l: 'พันธกิจ (หนึ่งข้อต่อหนึ่งบรรทัด)', t: 'textarea', h: 120 }, { k: 'team', l: 'คณะผู้บริหาร/กรรมการ (หนึ่งคนต่อหนึ่งบรรทัด รูปแบบ: ชื่อ | ตำแหน่ง)', t: 'textarea', h: 140, ph: 'นายสมชาย ใจดี | ผู้ใหญ่บ้าน' }, { k: 'population', l: 'ประชากร (คน)', t: 'number' }, { k: 'households', l: 'ครัวเรือน', t: 'number' }, { k: 'groups', l: 'จำนวนกลุ่ม/ชมรม', t: 'number' }, { sec: 'ข้อมูลติดต่อ' }, { k: 'phone', l: 'เบอร์โทรศัพท์' }, { k: 'email', l: 'อีเมล' }, { k: 'address', l: 'ที่อยู่', full: 1 }, { k: 'officeHours', l: 'เวลาทำการ', full: 1 },
+      { k: 'aboutImage', l: 'รูปประกอบหน้าเกี่ยวกับชุมชน (ไม่บังคับ)', t: 'image' }, { k: 'vision', l: 'วิสัยทัศน์', t: 'textarea', h: 80 }, { k: 'mission', l: 'พันธกิจ (หนึ่งข้อต่อหนึ่งบรรทัด)', t: 'textarea', h: 120 }, { k: 'team', l: 'คณะผู้บริหาร/กรรมการ (หนึ่งคนต่อหนึ่งบรรทัด รูปแบบ: ชื่อ | ตำแหน่ง)', t: 'textarea', h: 140, ph: 'นายสมชาย ใจดี | ผู้ใหญ่บ้าน' }, { k: 'population', l: 'ประชากร (คน)', t: 'number' }, { k: 'households', l: 'ครัวเรือน', t: 'number' }, { k: 'groups', l: 'จำนวนกลุ่ม/ชมรม', t: 'number' }, { sec: 'ความเป็นส่วนตัว' }, { k: 'privacyNote', l: 'หมายเหตุเรื่องข้อมูลส่วนบุคคล (แสดงในฟอร์มแจ้งปัญหา)', t: 'textarea', h: 80, s: 'ไม่บังคับ เช่น หน่วยงานผู้ดูแลข้อมูล หรือช่องทางขอแก้ไข/ลบข้อมูล' }, { sec: 'ข้อมูลติดต่อ' }, { k: 'phone', l: 'เบอร์โทรศัพท์' }, { k: 'email', l: 'อีเมล' }, { k: 'address', l: 'ที่อยู่', full: 1 }, { k: 'officeHours', l: 'เวลาทำการ', full: 1 },
       { k: 'lineUrl', l: 'ลิงก์ LINE', t: 'url', ph: 'https://line.me/...' }, { k: 'facebookUrl', l: 'ลิงก์ Facebook', t: 'url', ph: 'https://facebook.com/...' }, { k: 'mapEmbed', l: 'ลิงก์ฝังแผนที่ Google Maps', t: 'url', full: 1, s: 'Google Maps > แชร์ > ฝังแผนที่ แล้วคัดลอกเฉพาะลิงก์ใน src="..."' }];
     return {
       html: head('ตั้งค่าเว็บ', 'แก้ไขข้อความและข้อมูลติดต่อที่แสดงบนหน้าเว็บ') + '<div class="box" style="margin-top:0" id="sf">' + formHTML(F, A.settings) + '<div class="m-actions"><button class="btn btn-dark" id="ss">บันทึกการตั้งค่า</button></div></div>',

@@ -111,3 +111,8 @@ body.admin { background: var(--ivory-2); }
   .tbl .t-main, .tbl .t-sub { max-width: none; white-space: normal; }
   .acts { justify-content: flex-start; margin-top: .3rem; }
 }
+
+/* Phase 2 */
+.tbl tr.click:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; background: var(--ivory); }
+.modal:focus { outline: none; }
+.toolbar + .count { margin-top: calc(var(--s2) * -1); }
