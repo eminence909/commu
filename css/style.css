@@ -432,3 +432,38 @@ a.cinfo:hover { border-color: var(--forest); }
   .privacy dd { margin-bottom: .6rem; }
   .hint-row { flex-direction: column; gap: .2rem; }
 }
+
+/* ---------- Phase 3: แผนที่โครงการ 3 มิติ ---------- */
+.m3 { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--s5); align-items: stretch; }
+.m3-stage { position: relative; aspect-ratio: 16 / 11; min-height: 300px; border-radius: var(--r); background: var(--forest); overflow: hidden; }
+.m3-canvas, .m3-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.m3-canvas { cursor: grab; } .m3-canvas:active { cursor: grabbing; }
+.m3-load { position: absolute; inset: 0; display: grid; place-items: center; color: var(--on-dark-2); font-size: var(--fs-sm); }
+.m3-svg .gr { fill: none; stroke: rgba(168, 182, 167, .22); stroke-width: .3; }
+.m3-pt { cursor: pointer; }
+.m3-pt circle { stroke: var(--ivory); stroke-width: .5; }
+.m3-pt .halo { fill: none; stroke: var(--ivory); stroke-width: .5; stroke-dasharray: 1.4 1.4; opacity: 0; }
+.m3-pt.on .halo { opacity: 1; }
+.m3-side { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
+.m3-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; max-height: 300px; overflow: auto; }
+.m3-i { width: 100%; min-height: 56px; display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; padding: .6rem .9rem; text-align: left; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); background: var(--surface); }
+.m3-i:hover { border-color: var(--forest); }
+.m3-i[aria-pressed="true"] { border-color: var(--forest); background: var(--ivory-2); box-shadow: inset 4px 0 0 var(--brass); }
+.m3-i > span { font-size: var(--fs-sm); color: var(--muted); }
+.m3-card { padding: var(--s4); border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); display: grid; gap: .6rem; align-content: start; flex: 1; }
+.m3-card h3 { font-size: 1.1rem; }
+.m3-card p { margin: 0; }
+.m3-card .btn { justify-self: start; }
+.m3-foot { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); align-items: center; justify-content: space-between; margin-top: var(--s4); }
+.m3-legend { display: flex; flex-wrap: wrap; gap: .4rem var(--s4); font-size: var(--fs-sm); color: var(--muted); }
+.m3-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+.sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line-strong); display: inline-block; }
+.sw-plan { background: var(--sage); } .sw-doing { background: var(--brass); } .sw-done { background: var(--ivory); }
+.m3-note { margin-top: var(--s3); font-size: var(--fs-sm); color: var(--muted); }
+.m3-nostage { grid-template-columns: 1fr; } .m3-nostage .m3-stage { display: none; }
+.m3-foot [hidden] { display: none; }
+@media (max-width: 800px) {
+  .m3 { grid-template-columns: 1fr; }
+  .m3-stage { aspect-ratio: 1 / 1; min-height: 0; }
+  .m3-list { max-height: none; }
+}

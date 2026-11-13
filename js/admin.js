@@ -304,7 +304,7 @@
       sub1: function (x) { return esc(x.location || ''); },
       cell: function (x) { return status(TH.PROJECT_STATUS, x.status) + '<div class="bar" style="--p:' + x.progress + ';margin-top:.4rem;width:140px"><i></i></div>'; },
       blank: function () { return { id: uid('p_'), status: 'plan', progress: 0, budget: 0, startDate: today(), endDate: '', location: '', description: '', image: '', title: '' }; },
-      fields: function () { return [{ k: 'title', l: 'ชื่อโครงการ', req: 1, full: 1 }, { k: 'status', l: 'สถานะ', t: 'select', o: stOpts(TH.PROJECT_STATUS) }, { k: 'progress', l: 'ความคืบหน้า (%)', t: 'number', max: 100 }, { k: 'budget', l: 'งบประมาณ (บาท)', t: 'number' }, { k: 'location', l: 'สถานที่' }, { k: 'startDate', l: 'วันเริ่ม', t: 'date' }, { k: 'endDate', l: 'วันสิ้นสุด', t: 'date' }, { k: 'description', l: 'รายละเอียด', t: 'textarea', h: 130 }, { k: 'image', l: 'รูปภาพ', t: 'image' }]; }
+      fields: function () { return [{ k: 'title', l: 'ชื่อโครงการ', req: 1, full: 1 }, { k: 'status', l: 'สถานะ', t: 'select', o: stOpts(TH.PROJECT_STATUS) }, { k: 'progress', l: 'ความคืบหน้า (%)', t: 'number', max: 100 }, { k: 'budget', l: 'งบประมาณ (บาท)', t: 'number' }, { k: 'location', l: 'สถานที่' }, { k: 'lat', l: 'ละติจูด (ไม่บังคับ)', ph: 'เช่น 13.7563', s: 'ใส่ทั้งละติจูดและลองจิจูด จึงจะขึ้นในแผนที่โครงการหน้าแรก คัดลอกได้จาก Google Maps: คลิกขวาที่จุดแล้วกดตัวเลขพิกัด' }, { k: 'lng', l: 'ลองจิจูด (ไม่บังคับ)', ph: 'เช่น 100.5018' }, { k: 'startDate', l: 'วันเริ่ม', t: 'date' }, { k: 'endDate', l: 'วันสิ้นสุด', t: 'date' }, { k: 'description', l: 'รายละเอียด', t: 'textarea', h: 130 }, { k: 'image', l: 'รูปภาพ', t: 'image' }]; }
     });
   }
   function news() {

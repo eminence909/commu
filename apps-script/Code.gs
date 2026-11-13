@@ -11,7 +11,7 @@ var ADMIN_PASSWORD = 'เปลี่ยนรหัสผ่านตรงน�
 var SHEETS = {
   settings: ['key', 'value'],
   news: ['id', 'title', 'category', 'date', 'summary', 'content', 'image', 'published'],
-  projects: ['id', 'title', 'status', 'progress', 'budget', 'startDate', 'endDate', 'location', 'description', 'image'],
+  projects: ['id', 'title', 'status', 'progress', 'budget', 'startDate', 'endDate', 'location', 'description', 'image', 'lat', 'lng'],
   reports: ['code', 'createdAt', 'updatedAt', 'name', 'phone', 'category', 'location', 'lat', 'lng', 'detail', 'image', 'status', 'note', 'consent'],
   gallery: ['id', 'title', 'date', 'caption', 'image']
 };

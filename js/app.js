@@ -56,6 +56,71 @@
     });
   }
 
+  /* ---------- แผนที่โครงการ 3 มิติ (แสดงเฉพาะโครงการที่มีพิกัดจริง) ---------- */
+  var cleanup3d = null, M3_V = '20261113c';
+  function destroy3d() { if (cleanup3d) { try { cleanup3d(); } catch (e) { /* ข้าม */ } cleanup3d = null; } }
+  function geoProjects() { return S.projects.filter(function (p) { return p.lat !== null && p.lng !== null && !(p.lat === 0 && p.lng === 0); }); }
+  function mapSection(head) {
+    var g = geoProjects(); if (!g.length) return '';
+    var leg = [['plan', 'วางแผน'], ['doing', 'กำลังดำเนินการ'], ['done', 'เสร็จสิ้น']].map(function (x) { return '<span><i class="sw sw-' + x[0] + '"></i>' + x[1] + '</span>'; }).join('');
+    return '<section class="section m3-sec"><div class="container">' + head('แผนที่โครงการ', 'โครงการอยู่ตรงไหน คืบหน้าแค่ไหน') +
+      '<div class="m3" id="m3"><div class="m3-stage" id="m3-stage"><span class="m3-load">กำลังเตรียมแผนที่...</span></div><div class="m3-side"><ul class="m3-list">' + g.map(function (p) {
+        var st = TH.PROJECT_STATUS[p.status] || TH.PROJECT_STATUS.plan;
+        return '<li><button type="button" class="m3-i" data-id="' + esc(p.id) + '" aria-pressed="false"><b>' + esc(p.title) + '</b><span><span class="badge ' + st.cls + '">' + st.label + '</span> ' + p.progress + '%</span></button></li>';
+      }).join('') + '</ul><div class="m3-card" id="m3-card" aria-live="polite"></div></div></div>' +
+      '<div class="m3-foot"><div class="m3-legend">' + leg + '<span id="m3-key">ขนาดของจุด = ความคืบหน้า</span></div><button type="button" class="btn btn-outline btn-sm" id="m3-pause" hidden>หยุดหมุน</button></div>' +
+      '<p class="m3-note" id="m3-note">ตำแหน่งและระยะห่างคำนวณจากพิกัดที่ผู้ดูแลกรอกไว้ ไม่ใช่แผนที่ถนน' + (g.length < S.projects.length ? ' · แสดง ' + g.length + ' จาก ' + S.projects.length + ' โครงการ (ที่มีพิกัด)' : '') + '</p></div></section>';
+  }
+  function loadMap3d() {
+    if (window.Map3D) return Promise.resolve(window.Map3D);
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script'); s.src = 'js/map3d.js?v=' + M3_V;
+      s.onload = function () { window.Map3D ? res(window.Map3D) : rej(new Error('map3d')); };
+      s.onerror = function () { rej(new Error('map3d')); };
+      document.head.appendChild(s);
+    });
+  }
+  function initMap3d() {
+    var root = $('#m3'); if (!root) return;
+    var items = geoProjects(), handle = null, dead = false, io2 = null, card = $('#m3-card'), btns = $$('.m3-i', root);
+    var prompt = '<p class="muted">เลือกโครงการจากรายการ หรือกดที่จุด/แท่งบนแผนที่ เพื่อดูรายละเอียด</p>';
+    card.innerHTML = prompt;
+    function select(id) {
+      btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-id') === id)); });
+      var p = items.filter(function (x) { return x.id === id; })[0];
+      if (!p) { card.innerHTML = prompt; return; }
+      var st = TH.PROJECT_STATUS[p.status] || TH.PROJECT_STATUS.plan;
+      card.innerHTML = '<h3>' + esc(p.title) + '</h3><p><span class="badge ' + st.cls + '">' + st.label + '</span>' + (p.location ? ' <span class="muted">' + icon('pin') + ' ' + esc(p.location) + '</span>' : '') + '</p>' +
+        '<div class="pr-row"><span>ความคืบหน้า</span><b>' + p.progress + '%</b></div><div class="bar in" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p.progress + '" aria-label="ความคืบหน้า ' + esc(p.title) + '" style="--p:' + p.progress + '"><i></i></div>' +
+        '<a class="btn btn-outline btn-sm" href="#/projects/' + encodeURIComponent(p.id) + '">ดูรายละเอียดโครงการ ' + icon('arrow-right') + '</a>';
+      if (handle) handle.select(id);
+    }
+    btns.forEach(function (b) { b.onclick = function () { select(b.getAttribute('data-id')); }; });
+    function ext(m) { return m >= 1000 ? (m / 1000).toFixed(1).replace(/\.0$/, '') + ' กิโลเมตร' : Math.round(m / 10) * 10 + ' เมตร'; }
+    function start() {
+      var st = $('#m3-stage'); if (!st) return;
+      loadMap3d().then(function (M) {
+        if (dead) return;
+        var ld = $('.m3-load', st); if (ld) ld.remove();
+        handle = M.mount(st, items, {
+          reduced: prefersReduced, onPick: select,
+          onMode: function (h) {
+            var key = $('#m3-key'); if (key) key.textContent = h.mode === 'webgl' ? 'ความสูงของแท่ง = ความคืบหน้า (เส้นบางคือ 100%) · ลากเพื่อหมุนมุมมอง' : 'ขนาดของจุด = ความคืบหน้า';
+            var pb = $('#m3-pause'); if (!pb) return;
+            pb.hidden = !(h.mode === 'webgl' && h.canSpin); pb.textContent = 'หยุดหมุน';
+            pb.onclick = function () { var on = !h.isSpinning(); h.setSpin(on); pb.textContent = on ? 'หยุดหมุน' : 'หมุนต่อ'; };
+          }
+        });
+        var n = $('#m3-note'); if (n && handle.extentM) n.textContent += ' · พื้นที่ที่แสดงกว้างประมาณ ' + ext(handle.extentM);
+      }).catch(function () { root.classList.add('m3-nostage'); });
+    }
+    if ('IntersectionObserver' in window) {
+      io2 = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io2.disconnect(); start(); } }, { rootMargin: '300px' });
+      io2.observe(root);
+    } else start();
+    cleanup3d = function () { dead = true; if (io2) io2.disconnect(); if (handle) handle.destroy(); };
+  }
+
   /* ---------- หน้าแรก ---------- */
   function stats() {
     var P = S.projects, R = S.reportStats;
@@ -90,6 +155,8 @@
         return '<a class="qs' + (x[4] ? ' main' : '') + '" href="' + x[3] + '"><span class="qs-n">' + x[0] + '</span><span><b>' + x[1] + '</b><small>' + x[2] + '</small></span>' + icon('arrow-right') + '</a>';
       }).join('') + '</nav></div></section>' +
 
+      mapSection(head) +
+
       (fig.length ? '<section class="section"><div class="container">' + head('ชุมชนในตัวเลข', 'ข้อมูลชุมชนโดยสรุป') + '<div class="figures">' + fig.map(function (x) {
         return '<div class="fig"><b>' + fmtNum(x[0]) + '</b><span>' + esc(x[1]) + '</span></div>';
       }).join('') + '</div></div></section>' : '') +
@@ -110,7 +177,7 @@
 
     return {
       title: 'หน้าแรก', html: html, after: function () {
-        bindGallery(S.gallery.slice(0, 6));
+        bindGallery(S.gallery.slice(0, 6)); initMap3d();
         $('#homeTrk').onsubmit = function (e) { e.preventDefault(); var c = normCode($('#homeCode').value); if (c) location.hash = '#/track/' + encodeURIComponent(c); };
       }
     };
@@ -523,6 +590,7 @@
     closeMenu();
     view.classList.add('leaving');
     sleep(first || prefersReduced ? 0 : 170).then(function () {
+      destroy3d();
       var r;
       try { r = b ? b() : notFound(); } catch (e) {
         if (window.console) console.error(e);
@@ -567,9 +635,13 @@
       '<div class="container section">' + (err ? '<button class="btn btn-dark" id="retry">ลองอีกครั้ง</button>' : '<div class="grid g3"><div class="sk" style="height:300px"></div><div class="sk" style="height:300px"></div><div class="sk" style="height:300px"></div></div>') + '</div>';
     if (err) $('#retry').onclick = boot;
   }
+  function geoNum(v, max) {
+    if (v === '' || v === null || v === undefined) return null;
+    var n = Number(v); return (isFinite(n) && Math.abs(n) <= max) ? n : null;
+  }
   function apply(d) {
     S.settings = d.settings || {}; S.news = d.news || []; S.gallery = (d.gallery || []).filter(function (g) { return safeUrl(g.image); }); S.reportStats = d.reportStats || [];
-    S.projects = (d.projects || []).map(function (p) { return Object.assign({}, p, { progress: Math.max(0, Math.min(100, Number(p.progress) || 0)), budget: Number(p.budget) || 0 }); });
+    S.projects = (d.projects || []).map(function (p) { return Object.assign({}, p, { progress: Math.max(0, Math.min(100, Number(p.progress) || 0)), budget: Number(p.budget) || 0, lat: geoNum(p.lat, 90), lng: geoNum(p.lng, 180) }); });
   }
   var KEY = 'cw_pub_cache_v1', lastRaw = '', stale = false, netbar = $('#netbar');
   function netState() {
